@@ -104,7 +104,7 @@ def top_segments(
 
 
 def explanation_text(label: str, minutes: float, extra_min: float, diff_p50: float | None, p50: float) -> str:
-    """Build the API's short explanation without safety claims."""
+    """Build the API's short explanation: counts only, never a judgment about the route."""
     import math
     from waykin import constants as C
 

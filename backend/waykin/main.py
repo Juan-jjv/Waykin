@@ -32,8 +32,8 @@ access = logging.getLogger("waykin.access")
 DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
 SWEEP_S = 15.0
 NO_STORE = ("/api/routes", "/api/journeys", "/api/relay")
-CSP = ("default-src 'self'; img-src 'self' data: https://tile.openstreetmap.org https://*.tile.openstreetmap.org; "
-       "connect-src 'self' wss: ws:")
+CSP = ("default-src 'self'; img-src 'self' data: blob: https://tiles.openfreemap.org; "
+       "connect-src 'self' wss: ws: https://tiles.openfreemap.org")
 
 
 def build_state(settings: Settings) -> tuple[AppState, HazardStreamHub]:

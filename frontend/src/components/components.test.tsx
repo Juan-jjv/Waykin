@@ -5,7 +5,7 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Provenance, RoutesResponse } from "../api/types";
-import { ABSTAIN, STR } from "../copy/strings";
+import { abstainCopy, strings } from "../copy/strings";
 import { incidentRadius } from "./IncidentLayer";
 import { ProvenanceBanner } from "./ProvenanceBanner";
 import { RoutePanel } from "./RoutePanel";
@@ -32,30 +32,36 @@ function routes(status: "recommend" | "abstain", reason: RoutesResponse["decisio
   };
 }
 
+const noop = () => undefined;
+const panel = (data: RoutesResponse, selectedId: string) => (
+  <RoutePanel response={data} selectedId={selectedId} segmentRouteId={null} onSelect={noop}
+    onShowSegments={noop} onStartWalk={noop} walkNote={null} />
+);
+
 describe("components", () => {
   it("incident dots grow with the count, up to a cap, and the text states counts", () => {
     expect(incidentRadius(9)).toBeGreaterThan(incidentRadius(1));
     expect(incidentRadius(100000)).toBe(16);
-    expect(STR.incidentCount(1)).toBe("1 reported incident, last 90 days");
-    expect(STR.incidentCount(3)).toBe("3 reported incidents, last 90 days");
-    expect(STR.incidentCategory("break_and_enter", 2)).toBe("break and enter: 2");
+    expect(strings.incidentCount(1)).toBe("1 reported incident, last 90 days");
+    expect(strings.incidentCount(3)).toBe("3 reported incidents, last 90 days");
+    expect(strings.incidentCategory("break_and_enter", 2)).toBe("break and enter: 2");
   });
 
-  it("ProvenanceBanner shows the source and the synthetic badge", () => {
+  it("ProvenanceBanner shows the source, date and units", () => {
     render(<ProvenanceBanner provenance={prov} />);
-    expect(screen.getByText("Synthetic data (demo)")).toBeTruthy();
-    expect(screen.getByText("SYNTHETIC DATA")).toBeTruthy();
+    expect(screen.getByText(/Synthetic data \(demo\) · as of Oct 31, 2026/)).toBeTruthy();
+    expect(screen.getByText(prov.units)).toBeTruthy();
   });
 
   it("RoutePanel marks the recommendation and shows stability as a count", () => {
-    render(<RoutePanel data={routes("recommend")} selectedId="b" onSelect={() => undefined} />);
+    render(panel(routes("recommend"), "b"));
     expect(screen.getByText("Recommended: Balanced")).toBeTruthy();
     expect(screen.getByText("Holds in 471 of 500 simulations")).toBeTruthy();
   });
 
   it.each(["thin_data", "indistinguishable", "too_costly", "no_alternative"] as const)("abstain card for %s", (reason) => {
-    render(<RoutePanel data={routes("abstain", reason)} selectedId="f" onSelect={() => undefined} />);
-    expect(screen.getByText(ABSTAIN[reason].headline)).toBeTruthy();
+    render(panel(routes("abstain", reason), "f"));
+    expect(screen.getByText(abstainCopy[reason].headline)).toBeTruthy();
   });
 
   it("lint:words fails on a banned word", () => {

@@ -17,6 +17,10 @@ export type JourneyCreated = S["JourneyCreated"];
 export type Hazard = S["Hazard"];
 export type HazardList = S["HazardList"];
 export type DemoPreset = S["DemoPreset"];
+export type Interval = S["Interval"];
+export type TopSegment = S["TopSegment"];
 export type ErrorCode =
   | "outside_area" | "no_path" | "invalid_token" | "expired" | "not_found" | "rate_limited" | "forbidden" | "validation";
 export type AbstainReason = NonNullable<Decision["reason"]>;
+export type RouteLabel = RouteOption["label"];
+export type RadiusM = NonNullable<RoutesRequest["radius_m"]>;
