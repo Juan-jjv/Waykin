@@ -23,16 +23,19 @@ class HazardStreamHub:
         self._loop: asyncio.AbstractEventLoop | None = None
 
     def publish(self, kind: str, h: Hazard) -> None:
-        """Called synchronously by HazardStore on every change."""
+        """Called synchronously by HazardStore on every change, usually from a threadpool worker (sync
+        endpoints), so tasks are scheduled with call_soon_threadsafe: create_task from another thread
+        would not wake the loop and the event could sit unsent."""
         if kind == "added":
             msg = {"type": "hazard.added", "hazard": h.model_dump(mode="json")}
         else:
             msg = {"type": "hazard.removed", "hazard_id": h.hazard_id, "edge_ids": h.edge_ids}
         text = json.dumps(msg)
         loop = self._loop
+        if loop is None or loop.is_closed():
+            return
         for ws in list(self.clients):
-            if loop is not None:
-                loop.create_task(self._send(ws, text))
+            loop.call_soon_threadsafe(lambda ws=ws: loop.create_task(self._send(ws, text)))
 
     async def handle(self, ws: WebSocket) -> None:
         await ws.accept()

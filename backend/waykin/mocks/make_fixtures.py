@@ -154,7 +154,12 @@ def main():
                       S.DemoPreset(id="mock-recommend", name="Campus to Whyte (mock)", description="Recommends a detour",
                                    origin=ll(f_path[0]), destination=ll(f_path[-1]), expected="recommend"),
                       S.DemoPreset(id="mock-abstain", name="Short hop (mock)", description="Routes are about the same",
-                                   origin=ll(fa[0]), destination=ll(fa[-1]), expected="abstain")])
+                                   origin=ll(fa[0]), destination=ll(fa[-1]), expected="abstain"),
+                      # /api/demo/trigger/mock-reroute adds hazard_closure (demo/__init__.py), which blocks
+                      # the abstain fixture's fastest route; routes_reroute avoids it.
+                      S.DemoPreset(id="mock-reroute", name="Closure on the way (mock)",
+                                   description="A scripted closure lands on the route; the walker reroutes",
+                                   origin=ll(fa[0]), destination=ll(fa[-1]), expected="reroute")])
 
     for name, model in [("meta", meta), ("incidents", incidents), ("routes_recommend", rec),
                         ("routes_abstain", abst), ("routes_reroute", reroute), ("hazard_closure", hazard)]:

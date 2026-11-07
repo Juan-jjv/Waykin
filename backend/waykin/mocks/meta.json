@@ -63,6 +63,20 @@
     "lon": -113.514932
    },
    "expected": "abstain"
+  },
+  {
+   "id": "mock-reroute",
+   "name": "Closure on the way (mock)",
+   "description": "A scripted closure lands on the route; the walker reroutes",
+   "origin": {
+    "lat": 53.51686,
+    "lon": -113.522093
+   },
+   "destination": {
+    "lat": 53.523304,
+    "lon": -113.514932
+   },
+   "expected": "reroute"
   }
  ]
 }

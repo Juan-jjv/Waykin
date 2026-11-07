@@ -17,7 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from waykin.api import hazards, journeys, meta, routes
+from waykin.api import demo, hazards, journeys, meta, routes
 from waykin.api.deps import mock
 from waykin.config import Settings
 from waykin.realtime.hazard_store import HazardStore
@@ -97,7 +97,7 @@ def create_app(settings: Settings | None = None, state: AppState | None = None) 
         return response
 
     _install_error_handlers(app)
-    for r in (meta.router, routes.router, journeys.router, hazards.router):
+    for r in (meta.router, routes.router, journeys.router, hazards.router, demo.router):
         app.include_router(r, prefix="/api")
 
     if DIST.is_dir():
