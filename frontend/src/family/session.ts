@@ -10,16 +10,42 @@ import {
 
 type DeviceKey = { privateKey: CryptoKey; publicKey: string };
 
-/** This device's key pair for the account. Creates and uploads one if missing; a new device replaces the old key. */
-export async function ensureDeviceKey(account: AccountOut): Promise<DeviceKey> {
+const deviceKeys = new Map<string, Promise<DeviceKey>>();
+
+/**
+ * This device's key pair for the account. Every caller shares one request, so a page that asks several times at
+ * once can't create several keys. A key already on this device is always kept (never replaced because a cached
+ * account object looks out of date); a device with no key creates one. The server copy of the public key is
+ * brought in line with this device's key.
+ */
+export function ensureDeviceKey(account: AccountOut): Promise<DeviceKey> {
+  const id = account.account_id;
+  let pending = deviceKeys.get(id);
+  if (!pending) {
+    pending = loadDeviceKey(account);
+    deviceKeys.set(id, pending);
+    pending.catch(() => deviceKeys.delete(id));   // let a later call retry after a failure
+  }
+  return pending;
+}
+
+async function loadDeviceKey(account: AccountOut): Promise<DeviceKey> {
   const id = `device:${account.account_id}`;
   const stored = await idb.get<DeviceKey>(KEYS, id);
-  if (stored && stored.publicKey === account.public_key) return stored;
+  if (stored) {
+    if (stored.publicKey !== account.public_key) await accountApi.setPublicKey(stored.publicKey);
+    return stored;
+  }
   const pair = await newDeviceKeyPair();
   const fresh = { privateKey: pair.privateKey, publicKey: await exportPublicKey(pair.publicKey) };
   await idb.put(KEYS, fresh, id);
   await accountApi.setPublicKey(fresh.publicKey);
   return fresh;
+}
+
+/** Forget the cached key (after deleting the account). */
+export function forgetDeviceKey(accountId: string): void {
+  deviceKeys.delete(accountId);
 }
 
 export class NoFamilyKey extends Error {}
@@ -51,7 +77,13 @@ export async function joinFamily(fid: string, token: string, secret: Uint8Array,
 /** Owner removes someone, then replaces the family secret so the removed person can't read new walks. */
 export async function removeAndRotate(detail: FamilyDetail, accountId: string): Promise<void> {
   await accountApi.removeMember(detail.family_id, accountId);
-  const after = await accountApi.family(detail.family_id);
+  await resetFamilyKey(detail.family_id);
+}
+
+/** Owner only: a new family secret, wrapped for every member's current device key. Also repairs a family whose
+ * key no member's device can open. Old invite links stop working. */
+export async function resetFamilyKey(familyId: string): Promise<void> {
+  const after = await accountApi.family(familyId);
   const secret = newSecret();
   const wrapped: Record<string, string> = {};
   for (const m of after.members) {

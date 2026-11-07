@@ -5,6 +5,7 @@ import { NavBar } from "../components/NavBar";
 import { accountText } from "../copy/familyStrings";
 import { accountApi, useAccount } from "../family/api";
 import { idb, KEYS } from "../family/idb";
+import { forgetDeviceKey } from "../family/session";
 import { clearPins, hasPins, savePins } from "../walk/pins";
 
 export function AccountPage() {
@@ -39,6 +40,7 @@ export function AccountPage() {
             void leave(async () => {
               await accountApi.deleteAccount();
               await idb.delete(KEYS, `device:${me.account_id}`).catch(() => undefined);
+              forgetDeviceKey(me.account_id);
             });
           }}>{accountText.delete}</button>
         </div>

@@ -7,7 +7,7 @@ import { NavBar } from "../components/NavBar";
 import { familyText, walkText } from "../copy/familyStrings";
 import { accountApi, openFamilyStream, useAccount, useFamilies, useFamily } from "../family/api";
 import { logActivity } from "../family/history";
-import { createFamily, ensureDeviceKey, familySecret, inviteLink, removeAndRotate } from "../family/session";
+import { createFamily, ensureDeviceKey, familySecret, inviteLink, removeAndRotate, resetFamilyKey } from "../family/session";
 
 export function FamilyHomePage() {
   const account = useAccount();
@@ -128,7 +128,18 @@ export function FamilyHomePage() {
 
       {d ? (
         <>
-          {wrongDevice ? <p className="notice page-note">{familyText.wrongDevice}</p> : null}
+          {wrongDevice ? (
+            <div className="notice page-note">
+              <p>{isOwner ? familyText.wrongDeviceOwner : familyText.wrongDevice}</p>
+              {isOwner ? (
+                <button type="button" className="btn-primary inline" disabled={busy} onClick={() => void act(async () => {
+                  await ensureDeviceKey(me);
+                  await resetFamilyKey(d.family_id);
+                  await qc.invalidateQueries({ queryKey: ["family", d.family_id] });
+                })}>{familyText.resetKey}</button>
+              ) : null}
+            </div>
+          ) : null}
           <section className="page-card">
             <h2>{familyText.live}</h2>
             {d.journeys.length === 0 ? <p className="hint">{familyText.nobodyWalking}</p> : (
