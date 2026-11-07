@@ -1,22 +1,17 @@
-"""Fixtures for A4's privacy tests. Mock mode needs no data; real-mode tests skip until A2/A3 helpers exist."""
-
+"""Fixtures for the privacy suite (A4.11). Mock mode needs no data; real mode uses the grid graph."""
 from __future__ import annotations
-
-import os
 
 import pytest
 from fastapi.testclient import TestClient
 
 from waykin.config import Settings
-from waykin.main import create_app, make_state
+from waykin.main import create_app
 
 ADMIN = "test-admin-token"
-os.environ.setdefault("ADMIN_TOKEN", ADMIN)  # keeps startup from printing a generated token
 
 
 def settings(**over) -> Settings:
-    base = dict(WAYKIN_MOCK=True, ADMIN_TOKEN=ADMIN, MOCK_HAZARD_DELAY_S=0.2, SWEEP_INTERVAL_S=3600,
-                DEMO_MODE=False, RELAY_PLAINTEXT=False, SERVE_FRONTEND=False)
+    base = dict(WAYKIN_MOCK=True, ADMIN_TOKEN=ADMIN, DEMO_MODE=False, RELAY_PLAINTEXT=False)
     base.update(over)
     return Settings(**base)
 
@@ -38,16 +33,22 @@ def make_client():
 
 @pytest.fixture
 def client(make_client) -> TestClient:
+    """Mock mode, e2ee relay: the configuration the pitch's privacy claims are about."""
     return make_client()
 
 
 @pytest.fixture
 def real_state():
-    testing = pytest.importorskip("waykin.routing.testing")
-    bundle_mod = pytest.importorskip("waykin.data.bundle")
-    try:
-        g = testing.make_grid_graph()
-        b = bundle_mod.make_synthetic_bundle_for_tests(g)
-    except NotImplementedError:
-        pytest.skip("A2/A3 test helpers are still stubs")
-    return make_state(settings(WAYKIN_MOCK=False), g, b)
+    from waykin.data.bundle import make_synthetic_bundle_for_tests
+    from waykin.realtime.hazard_store import HazardStore
+    from waykin.realtime.journeys import JourneyStore
+    from waykin.realtime.relay import RelayHub
+    from waykin.routing.testing import make_grid_graph
+    from waykin.state import AppState
+
+    g = make_grid_graph()
+    s = settings(WAYKIN_MOCK=False)
+    j = JourneyStore()
+    return AppState(settings=s, graph=g, exposure=make_synthetic_bundle_for_tests(g),
+                    hazards=HazardStore(g.n_edges, edge_mapper=lambda req: []), journeys=j,
+                    relay=RelayHub(j, s.relay_mode))

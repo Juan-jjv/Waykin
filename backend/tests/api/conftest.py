@@ -1,53 +1,43 @@
-"""Fixtures for A4's API tests. Mock mode needs no data; real-mode tests skip until A2/A3 helpers exist."""
-
-from __future__ import annotations
-
-import os
-
 import pytest
 from fastapi.testclient import TestClient
 
 from waykin.config import Settings
-from waykin.main import create_app, make_state
-
-ADMIN = "test-admin-token"
-os.environ.setdefault("ADMIN_TOKEN", ADMIN)  # keeps startup from printing a generated token
-
-
-def settings(**over) -> Settings:
-    base = dict(WAYKIN_MOCK=True, ADMIN_TOKEN=ADMIN, MOCK_HAZARD_DELAY_S=0.2, SWEEP_INTERVAL_S=3600,
-                DEMO_MODE=False, RELAY_PLAINTEXT=False, SERVE_FRONTEND=False)
-    base.update(over)
-    return Settings(**base)
+from waykin.main import create_app
 
 
 @pytest.fixture
-def make_client():
-    clients = []
-
-    def _make(state=None, **over) -> TestClient:
-        c = TestClient(create_app(settings(**over), state=state))
-        c.__enter__()
-        clients.append(c)
-        return c
-
-    yield _make
-    for c in clients:
-        c.__exit__(None, None, None)
+def mock_client():
+    app = create_app(Settings(WAYKIN_MOCK=True, RELAY_PLAINTEXT=True, ADMIN_TOKEN="admin"))
+    with TestClient(app) as c:
+        yield c
 
 
 @pytest.fixture
-def client(make_client) -> TestClient:
-    return make_client()
+def e2ee_client():
+    app = create_app(Settings(WAYKIN_MOCK=True, RELAY_PLAINTEXT=False, ADMIN_TOKEN="admin"))
+    with TestClient(app) as c:
+        yield c
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def real_state():
-    testing = pytest.importorskip("waykin.routing.testing")
-    bundle_mod = pytest.importorskip("waykin.data.bundle")
-    try:
-        g = testing.make_grid_graph()
-        b = bundle_mod.make_synthetic_bundle_for_tests(g)
-    except NotImplementedError:
-        pytest.skip("A2/A3 test helpers are still stubs")
-    return make_state(settings(WAYKIN_MOCK=False), g, b)
+    """A real-mode AppState on the grid graph and the synthetic test bundle (no files)."""
+    from waykin.data.bundle import make_synthetic_bundle_for_tests
+    from waykin.realtime.hazard_store import HazardStore
+    from waykin.realtime.journeys import JourneyStore
+    from waykin.realtime.relay import RelayHub
+    from waykin.routing.testing import make_grid_graph
+    from waykin.state import AppState
+
+    g = make_grid_graph()
+    s = Settings(WAYKIN_MOCK=False, RELAY_PLAINTEXT=True, ADMIN_TOKEN="admin")
+    j = JourneyStore()
+    return AppState(settings=s, graph=g, exposure=make_synthetic_bundle_for_tests(g),
+                    hazards=HazardStore(g.n_edges, edge_mapper=lambda req: []), journeys=j,
+                    relay=RelayHub(j, s.relay_mode))
+
+
+@pytest.fixture
+def real_client(real_state):
+    with TestClient(create_app(state=real_state)) as c:
+        yield c

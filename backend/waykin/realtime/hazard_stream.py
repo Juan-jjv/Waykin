@@ -1,69 +1,76 @@
-"""Public, read-only hazard stream: snapshot on connect, then added/removed events and a ping every 20 s."""
+"""Public, read-only hazard stream (spec B5): snapshot on connect, then added/removed events, ping every 20 s.
 
+The server never learns which walker a hazard affects: clients compare edge ids themselves.
+"""
 from __future__ import annotations
 
 import asyncio
 import json
-import logging
-from collections.abc import Callable
-from contextlib import suppress
-from typing import Any
 
-from starlette.websockets import WebSocket, WebSocketDisconnect
+from fastapi import WebSocket, WebSocketDisconnect
 
-log = logging.getLogger("waykin.hazard_stream")
+from waykin.schemas import Hazard
 
-PING_INTERVAL_S = 20.0
-QUEUE_MAX = 256
+PING_S = 20.0
 
 
 class HazardStreamHub:
-    def __init__(self, ping_interval_s: float = PING_INTERVAL_S) -> None:
-        self.ping_interval_s = ping_interval_s
-        self._clients: set[asyncio.Queue[str]] = set()
+    def __init__(self, store_getter, mock_fixture: Hazard | None = None, mock_delay_s: float = 15.0):
+        self._store = store_getter
+        self.clients: set[WebSocket] = set()
+        self.mock_fixture = mock_fixture
+        self.mock_delay_s = mock_delay_s
+        self._loop: asyncio.AbstractEventLoop | None = None
 
-    def __len__(self) -> int:
-        return len(self._clients)
+    def publish(self, kind: str, h: Hazard) -> None:
+        """Called synchronously by HazardStore on every change, usually from a threadpool worker (sync
+        endpoints), so tasks are scheduled with call_soon_threadsafe: create_task from another thread
+        would not wake the loop and the event could sit unsent."""
+        if kind == "added":
+            msg = {"type": "hazard.added", "hazard": h.model_dump(mode="json")}
+        else:
+            msg = {"type": "hazard.removed", "hazard_id": h.hazard_id, "edge_ids": h.edge_ids}
+        text = json.dumps(msg)
+        loop = self._loop
+        if loop is None or loop.is_closed():
+            return
+        for ws in list(self.clients):
+            loop.call_soon_threadsafe(lambda ws=ws: loop.create_task(self._send(ws, text)))
 
-    def publish(self, message: dict[str, Any]) -> None:
-        """Called synchronously from the event loop thread (HazardStore changes)."""
-        text = json.dumps(message, default=str)
-        for q in list(self._clients):
-            try:
-                q.put_nowait(text)
-            except asyncio.QueueFull:
-                self._clients.discard(q)  # too slow: drop it, its sender will notice
-
-    async def handle(self, ws: WebSocket, snapshot: Callable[[], dict[str, Any]]) -> None:
+    async def handle(self, ws: WebSocket) -> None:
         await ws.accept()
-        q: asyncio.Queue[str] = asyncio.Queue(maxsize=QUEUE_MAX)
-        first = json.dumps(snapshot(), default=str)
-        self._clients.add(q)  # registered in the same tick as the snapshot: no event is missed
-        try:
-            await ws.send_text(first)
-            sender = asyncio.create_task(self._sender(ws, q))
-            receiver = asyncio.create_task(self._drain(ws))
-            _, pending = await asyncio.wait({sender, receiver}, return_when=asyncio.FIRST_COMPLETED)
-            for t in pending:
-                t.cancel()
-                with suppress(asyncio.CancelledError, Exception):
-                    await t
-        except Exception:
-            pass  # dead sockets are dropped quietly
-        finally:
-            self._clients.discard(q)
-
-    async def _sender(self, ws: WebSocket, q: asyncio.Queue[str]) -> None:
-        while q in self._clients or not q.empty():
-            try:
-                text = await asyncio.wait_for(q.get(), timeout=self.ping_interval_s)
-            except TimeoutError:
-                text = '{"type": "ping"}'
-            await ws.send_text(text)
-
-    async def _drain(self, ws: WebSocket) -> None:
+        self._loop = asyncio.get_running_loop()
+        store = self._store()
+        await ws.send_text(json.dumps({
+            "type": "snapshot",
+            "hazards": [h.model_dump(mode="json") for h in store.list()],
+            "blocked_edge_ids": store.blocked_ids(),
+        }))
+        self.clients.add(ws)
+        tasks = [asyncio.create_task(self._pinger(ws))]
+        if self.mock_fixture is not None:
+            tasks.append(asyncio.create_task(self._mock_emit(ws)))
         try:
             while True:
-                await ws.receive_text()
-        except (WebSocketDisconnect, RuntimeError, KeyError):
-            return
+                await ws.receive_text()  # read-only stream: ignore anything sent
+        except WebSocketDisconnect:
+            pass
+        finally:
+            self.clients.discard(ws)
+            for t in tasks:
+                t.cancel()
+
+    async def _pinger(self, ws: WebSocket) -> None:
+        while True:
+            await asyncio.sleep(PING_S)
+            await self._send(ws, json.dumps({"type": "ping"}))
+
+    async def _mock_emit(self, ws: WebSocket) -> None:
+        await asyncio.sleep(self.mock_delay_s)
+        await self._send(ws, json.dumps({"type": "hazard.added", "hazard": self.mock_fixture.model_dump(mode="json")}))
+
+    async def _send(self, ws: WebSocket, text: str) -> None:
+        try:
+            await ws.send_text(text)
+        except Exception:  # noqa: BLE001 - drop dead sockets quietly
+            self.clients.discard(ws)

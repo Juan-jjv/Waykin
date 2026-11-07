@@ -1,137 +1,83 @@
-"""In-memory journey store. Only token hashes are kept; nothing survives a journey's end."""
-
+"""In-memory journey sessions (spec A4.6). Raw tokens are never stored, only their sha256."""
 from __future__ import annotations
 
 import hashlib
 import hmac
 import secrets
-from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import UTC, datetime, timedelta
-
-from waykin import constants as C
-
-
-def utcnow() -> datetime:
-    return datetime.now(UTC)
-
-
-def _hash(token: str) -> bytes:
-    return hashlib.sha256(token.encode("utf-8")).digest()
+from datetime import datetime, timedelta, timezone
 
 
 class JourneyError(Exception):
-    """Base error. `close_code` is used by the relay, `http_status`/`code` by HTTP handlers."""
+    """Carries the relay close code and the API error code."""
 
-    close_code = 4401
-    http_status = 401
-    code = "invalid_token"
-    message = "Invalid token."
-
-    def __init__(self) -> None:
-        super().__init__(self.message)
+    def __init__(self, close_code: int, code: str, message: str):
+        super().__init__(message)
+        self.close_code, self.code = close_code, code
 
 
-class UnknownJourney(JourneyError):
-    close_code, http_status, code, message = 4404, 404, "not_found", "Unknown journey."
+def _h(token: str) -> bytes:
+    return hashlib.sha256(token.encode()).digest()
 
 
-class JourneyExpired(JourneyError):
-    close_code, http_status, code, message = 4410, 410, "expired", "Journey ended or expired."
-
-
-class BadToken(JourneyError):
-    close_code, http_status, code, message = 4401, 401, "invalid_token", "Invalid token."
-
-
-class WrongRole(JourneyError):
-    close_code, http_status, code, message = 4401, 401, "forbidden", "Token does not grant this role."
+def now() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 @dataclass
 class Journey:
-    journey_id: str            # secrets.token_urlsafe(9)
-    walker_token_hash: bytes   # sha256(token). Never store the raw token.
+    journey_id: str
+    walker_token_hash: bytes
     viewer_token_hash: bytes
     expires_at: datetime
-    latest: str | None = None  # the latest raw "loc" JSON text, relayed byte for byte
+    latest: str | None = None      # the latest raw "loc" JSON text, relayed byte for byte
     last_seq: int = -1
     ended: bool = False
 
 
 class JourneyStore:
-    def __init__(self, now: Callable[[], datetime] = utcnow) -> None:
-        self._now = now
-        self._journeys: dict[str, Journey] = {}
+    def __init__(self):
+        self._j: dict[str, Journey] = {}
 
-    # -- read helpers
-    def __contains__(self, jid: object) -> bool:
-        return jid in self._journeys
+    def __contains__(self, jid: str) -> bool:
+        return jid in self._j
 
     def __len__(self) -> int:
-        return len(self._journeys)
+        return len(self._j)
 
     def get(self, jid: str) -> Journey | None:
-        return self._journeys.get(jid)
+        return self._j.get(jid)
 
-    def ids(self) -> list[str]:
-        return list(self._journeys)
-
-    def is_expired(self, j: Journey) -> bool:
-        return j.ended or self._now() >= j.expires_at
-
-    # -- contract
     def create(self, ttl_min: int) -> tuple[Journey, str, str]:
-        ttl = max(1, min(int(ttl_min), C.JOURNEY_TTL_MIN_MAX))
         jid = secrets.token_urlsafe(9)
-        while jid in self._journeys:
-            jid = secrets.token_urlsafe(9)
-        walker_token = secrets.token_urlsafe(24)
-        viewer_token = secrets.token_urlsafe(24)
-        j = Journey(
-            journey_id=jid,
-            walker_token_hash=_hash(walker_token),
-            viewer_token_hash=_hash(viewer_token),
-            expires_at=self._now() + timedelta(minutes=ttl),
-        )
-        self._journeys[jid] = j
-        return j, walker_token, viewer_token
+        walker, viewer = secrets.token_urlsafe(24), secrets.token_urlsafe(24)
+        j = Journey(jid, _h(walker), _h(viewer), now() + timedelta(minutes=ttl_min))
+        self._j[jid] = j
+        return j, walker, viewer
 
     def verify(self, jid: str, role: str, token: str) -> Journey:
-        j = self._journeys.get(jid)
+        j = self._j.get(jid)
         if j is None:
-            raise UnknownJourney()
-        if self.is_expired(j):
-            raise JourneyExpired()
-        if not isinstance(token, str) or not token:
-            raise BadToken()
-        h = _hash(token)
-        want, other = (
-            (j.walker_token_hash, j.viewer_token_hash) if role == "walker"
-            else (j.viewer_token_hash, j.walker_token_hash) if role == "viewer"
-            else (None, None)
-        )
-        if want is None:
-            raise BadToken()
-        ok = hmac.compare_digest(h, want)
-        if not ok:
-            if hmac.compare_digest(h, other):
-                raise WrongRole()
-            raise BadToken()
+            raise JourneyError(4404, "not_found", "unknown journey")
+        if j.ended or j.expires_at <= now():
+            raise JourneyError(4410, "expired", "journey has ended")
+        expected = j.walker_token_hash if role == "walker" else j.viewer_token_hash if role == "viewer" else None
+        if expected is None or not hmac.compare_digest(_h(token or ""), expected):
+            raise JourneyError(4401, "invalid_token", "invalid token for this role")
         return j
 
     def purge(self, jid: str, reason: str) -> None:
-        j = self._journeys.pop(jid, None)
-        if j is not None:  # drop references eagerly
-            j.latest = None
-            j.ended = True
+        """Remove the entry entirely, including the latest message."""
+        j = self._j.pop(jid, None)
+        if j is not None:
+            j.latest, j.ended = None, True
 
     def sweep_expired(self) -> list[str]:
-        now = self._now()
-        return [jid for jid, j in self._journeys.items() if j.ended or now >= j.expires_at]
+        t = now()
+        return [jid for jid, j in self._j.items() if j.expires_at <= t]
 
     def clear(self) -> list[str]:
-        ids = list(self._journeys)
+        ids = list(self._j)
         for jid in ids:
-            self.purge(jid, "reset")
+            self.purge(jid, "stopped")
         return ids

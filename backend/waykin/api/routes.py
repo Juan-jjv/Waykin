@@ -1,55 +1,35 @@
-"""POST /api/routes and /api/routes/reroute: thin wrappers around routing.service.plan.
+"""POST /routes and /routes/reroute: thin wrappers around A3's service.plan (spec A4.5).
 
-The reroute handler never touches state.journeys, cookies or the Authorization header:
-the server cannot link a reroute to a person or a journey.
+Reroute never touches journeys, cookies or the Authorization header, and nothing here logs coordinates.
 """
-
-from __future__ import annotations
-
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from starlette.concurrency import run_in_threadpool
 
-from waykin import mocks
-from waykin.api.deps import StateDep
-from waykin.api.errors import ApiError
-from waykin.provenance import build_provenance
-from waykin.schemas import Error, LatLon, RerouteRequest, RoutesRequest, RoutesResponse
-from waykin.state import AppState
+from waykin import schemas as S
+from waykin.api.deps import get_state, mock
 
-router = APIRouter(tags=["routes"])
-_ERRORS = {422: {"model": Error}}
+router = APIRouter()
 
 
-async def _plan(state: AppState, origin: LatLon, destination: LatLon, radius_m: int | None) -> RoutesResponse:
-    r = int(radius_m or state.settings.DEFAULT_RADIUS_M)
-    mask = state.hazards.blocked_mask()  # computed on the event loop, read-only afterwards
+def _mock_routes(lat: float) -> S.RoutesResponse:
+    # Fixture chosen by origin latitude parity (4th decimal), so the UI can see both outcomes.
+    name = "routes_recommend" if int(round(lat * 1e4)) % 2 == 0 else "routes_abstain"
+    return S.RoutesResponse.model_validate(mock(name))
 
-    if state.mock:
-        blocked = set(state.hazards.blocked_edge_ids())
-        fx = mocks.load(mocks.route_fixture_name(origin.lat, blocked))
-        fx["provenance"] = build_provenance(state, r).model_dump(mode="json")
-        fx["blocked_edge_count"] = int(mask.sum())
-        return RoutesResponse.model_validate(fx)
 
-    if r not in state.exposure.radii:
-        raise ApiError(422, "validation", "That radius is not loaded on this server.")
-
+@router.post("/routes", response_model=S.RoutesResponse)
+async def routes(req: S.RoutesRequest, state=Depends(get_state)) -> S.RoutesResponse:
+    if state.settings.WAYKIN_MOCK:
+        return _mock_routes(req.origin.lat)
     from waykin.routing import service
-    from waykin.routing.types import NoPathError, OutsideAreaError
-
-    try:
-        return await run_in_threadpool(service.plan, state, origin, destination, r)
-    except OutsideAreaError:
-        raise ApiError(422, "outside_area", "A point is outside the mapped area.") from None
-    except NoPathError:
-        raise ApiError(422, "no_path", "No walking path connects these points.") from None
+    radius = req.radius_m or state.settings.DEFAULT_RADIUS_M
+    return await run_in_threadpool(service.plan, state, req.origin, req.destination, radius)
 
 
-@router.post("/routes", response_model=RoutesResponse, responses=_ERRORS)
-async def post_routes(req: RoutesRequest, state: AppState = StateDep) -> RoutesResponse:
-    return await _plan(state, req.origin, req.destination, req.radius_m)
-
-
-@router.post("/routes/reroute", response_model=RoutesResponse, responses=_ERRORS)
-async def post_reroute(req: RerouteRequest, state: AppState = StateDep) -> RoutesResponse:
-    return await _plan(state, req.position, req.destination, req.radius_m)
+@router.post("/routes/reroute", response_model=S.RoutesResponse)
+async def reroute(req: S.RerouteRequest, state=Depends(get_state)) -> S.RoutesResponse:
+    if state.settings.WAYKIN_MOCK:
+        return S.RoutesResponse.model_validate(mock("routes_reroute"))
+    from waykin.routing import service
+    radius = req.radius_m or state.settings.DEFAULT_RADIUS_M
+    return await run_in_threadpool(service.plan, state, req.position, req.destination, radius)

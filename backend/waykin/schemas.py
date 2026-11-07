@@ -1,8 +1,4 @@
-"""API v1 models (B5). Frozen at H3: change only through contract-requests/.
-
-Request models use extra="forbid". TypeScript types are generated from /openapi.json.
-"""
-
+"""API contract v1 (spec B5). Frozen at H10: change only through contract-requests/ and APPLIED.md."""
 from __future__ import annotations
 
 from datetime import date, datetime
@@ -10,47 +6,38 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from waykin import constants as C
-
-# ---------------------------------------------------------------- literals
 RouteLabelOut = Literal["fastest", "balanced", "lower_exposure"]
 AbstainReason = Literal["thin_data", "indistinguishable", "too_costly", "no_alternative"]
-DecisionStatus = Literal["recommend", "abstain"]
-ErrorCode = Literal[
-    "outside_area", "no_path", "invalid_token", "expired", "not_found", "rate_limited", "forbidden", "validation"
-]
+ErrorCode = Literal["outside_area", "no_path", "invalid_token", "expired", "not_found",
+                    "rate_limited", "forbidden", "validation"]
 RelayMode = Literal["e2ee", "plaintext"]
-Role = Literal["walker", "viewer"]
 HazardKind = Literal["closure", "incident", "report"]
-HazardSource = Literal["demo", "manual", "city_feed"]
-SourceName = Literal["eps", "synthetic"]
-RadiusM = Literal[50, 100, 200]
-PresetExpected = Literal["recommend", "abstain", "reroute"]
-WalkerStatus = Literal["walking", "rerouted", "arrived"]
-EndReason = Literal["arrived", "stopped"]
-EndedReason = Literal["arrived", "stopped", "expired"]
-
-LatLonPair = tuple[float, float]  # [lat, lon]
+Radius = Literal[50, 100, 200]
 
 
-class _Request(BaseModel):
+class Request(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
 # ---------------------------------------------------------------- common
-class LatLon(_Request):
+class LatLon(BaseModel):
+    lat: float = Field(ge=-90, le=90)
+    lon: float = Field(ge=-180, le=180)
+
+
+class LatLonIn(Request):
     lat: float = Field(ge=-90, le=90)
     lon: float = Field(ge=-180, le=180)
 
 
 class Provenance(BaseModel):
-    source: SourceName
+    source: Literal["eps", "synthetic"]
     source_label: str
     as_of: date
     window_days: int
     radius_m: int
-    units: str = C.UNITS
-    disclaimer: str = C.DISCLAIMER
+    units: str
+    disclaimer: str
 
 
 class Interval(BaseModel):
@@ -69,20 +56,20 @@ class Error(BaseModel):
     error: ErrorBody
 
 
-class Thresholds(BaseModel):
-    min_reduction: float = C.MIN_REDUCTION
-    min_draw_share: float = C.MIN_DRAW_SHARE
-    max_extra_time: float = C.MAX_EXTRA_TIME
-
-
 # ---------------------------------------------------------------- meta
+class Thresholds(BaseModel):
+    min_reduction: float
+    min_draw_share: float
+    max_extra_time: float
+
+
 class DemoPreset(BaseModel):
     id: str
     name: str
     description: str
     origin: LatLon
     destination: LatLon
-    expected: PresetExpected
+    expected: Literal["recommend", "abstain", "reroute"]
 
 
 class Meta(BaseModel):
@@ -90,7 +77,7 @@ class Meta(BaseModel):
     provenance: Provenance
     radii: list[int]
     default_radius_m: int
-    bbox: list[float] = Field(min_length=4, max_length=4, description="[west, south, east, north]")
+    bbox: list[float]
     categories: list[str]
     category_preset: str
     relay_mode: RelayMode
@@ -115,25 +102,24 @@ class IncidentsResponse(BaseModel):
 
 
 # ---------------------------------------------------------------- routes
-class RoutesRequest(_Request):
-    origin: LatLon
-    destination: LatLon
-    radius_m: RadiusM | None = None
+class RoutesRequest(Request):
+    origin: LatLonIn
+    destination: LatLonIn
+    radius_m: Radius | None = None
 
 
-class RerouteRequest(_Request):
-    """No journey id, no token, no cookies. The server cannot link it to a person."""
-
-    position: LatLon
-    destination: LatLon
-    radius_m: RadiusM | None = None
+class RerouteRequest(Request):
+    """No journey id, no token, no cookies: the server cannot link it to a person."""
+    position: LatLonIn
+    destination: LatLonIn
+    radius_m: Radius | None = None
 
 
 class TopSegment(BaseModel):
     edge_id: int
     name: str | None
     attributed: float
-    geometry: list[LatLonPair]
+    geometry: list[list[float]]
 
 
 class RouteOption(BaseModel):
@@ -145,21 +131,21 @@ class RouteOption(BaseModel):
     exposure: Interval
     exposure_diff_vs_fastest: Interval | None
     draws_better: int | None
-    geometry: list[LatLonPair]
+    geometry: list[list[float]]
     edge_ids: list[int]
-    top_segments: list[TopSegment] = Field(max_length=3)
+    top_segments: list[TopSegment]
     explanation: str
 
 
 class Decision(BaseModel):
-    status: DecisionStatus
+    status: Literal["recommend", "abstain"]
     recommended_route_id: str | None
     reason: AbstainReason | None
     message: str
     radius_sensitive: bool | None
     radius_decisions: dict[str, str] | None
-    thresholds: Thresholds = Field(default_factory=Thresholds)
-    n_draws: int = C.N_DRAWS
+    thresholds: Thresholds
+    n_draws: int
 
 
 class RoutesResponse(BaseModel):
@@ -172,10 +158,8 @@ class RoutesResponse(BaseModel):
 
 
 # ---------------------------------------------------------------- journeys
-class JourneyCreate(_Request):
-    expires_in_min: int | None = Field(
-        default=None, ge=10, le=C.JOURNEY_TTL_MIN_MAX, description="Defaults to JOURNEY_TTL_MIN (120)."
-    )
+class JourneyCreate(Request):
+    expires_in_min: int = Field(default=120, ge=10, le=240)
 
 
 class JourneyCreated(BaseModel):
@@ -194,19 +178,19 @@ class Hazard(BaseModel):
     lon: float
     radius_m: float
     description: str
-    source: HazardSource
+    source: Literal["demo", "manual", "city_feed"]
     created_at: datetime
     expires_at: datetime
     edge_ids: list[int]
 
 
-class HazardCreate(_Request):
-    kind: HazardKind
+class HazardCreate(Request):
+    kind: HazardKind = "closure"
     lat: float = Field(ge=-90, le=90)
     lon: float = Field(ge=-180, le=180)
     radius_m: float = Field(default=40, ge=10, le=300)
     ttl_min: int = Field(default=60, ge=1, le=720)
-    description: str = Field(max_length=140)
+    description: str = Field(default="Closure", max_length=140)
 
 
 class HazardList(BaseModel):
@@ -214,26 +198,26 @@ class HazardList(BaseModel):
     blocked_edge_ids: list[int]
 
 
-# ---------------------------------------------------------------- relay WebSocket messages
+# ---------------------------------------------------------------- WebSocket messages (relay + hazard stream)
 class Envelope(BaseModel):
     v: Literal[1] = 1
-    seq: int = Field(description="strictly increasing")
-    iv: str = Field(description="base64url, 12 bytes, no padding")
-    ct: str = Field(description="base64url AES-GCM ciphertext + tag, no padding")
+    seq: int
+    iv: str
+    ct: str
 
 
 class RouteRef(BaseModel):
     route_id: str
     label: RouteLabelOut
-    geometry: list[LatLonPair]
+    geometry: list[list[float]]
 
 
 class WalkerUpdate(BaseModel):
-    lat: float = Field(ge=-90, le=90)
-    lon: float = Field(ge=-180, le=180)
+    lat: float
+    lon: float
     accuracy_m: float
-    ts: int = Field(description="ms since epoch")
-    status: WalkerStatus
+    ts: int
+    status: Literal["walking", "rerouted", "arrived"]
     eta_min: float
     route: RouteRef | None = None
     note: str | None = None
@@ -241,7 +225,7 @@ class WalkerUpdate(BaseModel):
 
 class WsAuth(BaseModel):
     type: Literal["auth"] = "auth"
-    role: Role
+    role: Literal["walker", "viewer"]
     token: str
 
 
@@ -253,25 +237,20 @@ class WsReady(BaseModel):
 
 class WsLoc(BaseModel):
     type: Literal["loc"] = "loc"
-    env: Envelope | None = Field(default=None, description="e2ee mode")
-    plain: WalkerUpdate | None = Field(default=None, description="plaintext mode")
+    env: Envelope | None = None
+    plain: WalkerUpdate | None = None
 
 
 class WsEnd(BaseModel):
     type: Literal["end"] = "end"
-    reason: EndReason
+    reason: Literal["arrived", "stopped"]
 
 
 class WsEnded(BaseModel):
     type: Literal["ended"] = "ended"
-    reason: EndedReason
+    reason: Literal["arrived", "stopped", "expired"]
 
 
-class WsPing(BaseModel):
-    type: Literal["ping"] = "ping"
-
-
-# ---------------------------------------------------------------- hazard stream messages
 class HazardSnapshot(BaseModel):
     type: Literal["snapshot"] = "snapshot"
     hazards: list[Hazard]
@@ -289,9 +268,12 @@ class HazardRemoved(BaseModel):
     edge_ids: list[int]
 
 
-class WsSchemas(BaseModel):
-    """Exists only so WebSocket message types appear in OpenAPI (and types.gen.ts)."""
+class WsPing(BaseModel):
+    type: Literal["ping"] = "ping"
 
+
+class WsSchemas(BaseModel):
+    """Exists only so the WebSocket message models appear in OpenAPI for type generation."""
     auth: WsAuth | None = None
     ready: WsReady | None = None
     loc: WsLoc | None = None
@@ -303,15 +285,3 @@ class WsSchemas(BaseModel):
     hazard_added: HazardAdded | None = None
     hazard_removed: HazardRemoved | None = None
     ping: WsPing | None = None
-
-
-# ---------------------------------------------------------------- demo presets file (internal)
-class PresetHazard(BaseModel):
-    lat: float
-    lon: float
-    radius_m: float = 40
-    description: str
-
-
-class DemoPresetFile(DemoPreset):
-    hazard: PresetHazard | None = None

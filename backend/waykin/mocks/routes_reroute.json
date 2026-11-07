@@ -1,0 +1,107 @@
+{
+ "provenance": {
+  "source": "synthetic",
+  "source_label": "Synthetic data (mock mode)",
+  "as_of": "2026-10-31",
+  "window_days": 90,
+  "radius_m": 100,
+  "units": "reported incidents attributed to segments along this route, last 90 days",
+  "disclaimer": "Counts of reported incidents near street segments, from public police data. They describe the past, not what will happen on your walk. Not for comparing neighbourhoods."
+ },
+ "origin_snapped": {
+  "lat": 53.523241,
+  "lon": -113.517946
+ },
+ "destination_snapped": {
+  "lat": 53.522501,
+  "lon": -113.510359
+ },
+ "routes": [
+  {
+   "route_id": "3c6f0276ad",
+   "label": "fastest",
+   "minutes": 7.5,
+   "extra_minutes": 0.0,
+   "distance_m": 600.0,
+   "exposure": {
+    "p10": 1.9,
+    "p50": 2.8,
+    "p90": 3.9,
+    "mean": 2.87
+   },
+   "exposure_diff_vs_fastest": null,
+   "draws_better": null,
+   "geometry": [
+    [
+     53.523241,
+     -113.517946
+    ],
+    [
+     53.522343,
+     -113.517893
+    ],
+    [
+     53.522375,
+     -113.516386
+    ],
+    [
+     53.522406,
+     -113.514879
+    ],
+    [
+     53.522438,
+     -113.513372
+    ],
+    [
+     53.52247,
+     -113.511865
+    ],
+    [
+     53.522501,
+     -113.510359
+    ]
+   ],
+   "edge_ids": [
+    195,
+    194,
+    196,
+    198,
+    200,
+    202
+   ],
+   "top_segments": [
+    {
+     "edge_id": 196,
+     "name": "Test Ave 9",
+     "attributed": 0.6,
+     "geometry": [
+      [
+       53.522375,
+       -113.516386
+      ],
+      [
+       53.522406,
+       -113.514879
+      ]
+     ]
+    }
+   ],
+   "explanation": "Fastest option, 8 min. About 2.8 reported incidents."
+  }
+ ],
+ "decision": {
+  "status": "abstain",
+  "recommended_route_id": null,
+  "reason": "no_alternative",
+  "message": "There is only one reasonable route for this trip.",
+  "radius_sensitive": null,
+  "radius_decisions": null,
+  "thresholds": {
+   "min_reduction": 0.15,
+   "min_draw_share": 0.9,
+   "max_extra_time": 0.25
+  },
+  "n_draws": 500
+ },
+ "blocked_edge_count": 2
+}

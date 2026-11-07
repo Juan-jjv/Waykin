@@ -1,36 +1,39 @@
-"""Demo mode endpoints (DEMO_MODE=1 only)."""
+"""Demo controls (DEMO_MODE=1 only; 404 otherwise). Used by the presenter key and smoke/smoke.py.
 
-from __future__ import annotations
+POST /api/demo/trigger/{preset_id}  adds the preset's scripted closure (replacing any earlier demo closure)
+POST /api/demo/reset                clears hazards, ends every journey, closes every relay socket
+"""
+from fastapi import APIRouter, Depends, Request, Response
 
-from fastapi import APIRouter, Depends, Response
+from waykin import schemas as S
+from waykin.api.deps import api_error, get_state
+from waykin.demo import get_preset, hazard_request
 
-from waykin.api.deps import StateDep, require_demo
-from waykin.api.errors import ApiError
-from waykin.demo import get_preset
-from waykin.schemas import Error, Hazard, HazardCreate
-from waykin.state import AppState
 
-router = APIRouter(prefix="/demo", tags=["demo"], dependencies=[Depends(require_demo)],
-                   responses={404: {"model": Error}})
+def require_demo(request: Request) -> None:
+    if not request.app.state.waykin.settings.DEMO_MODE:
+        raise api_error(404, "not_found", "not found")
 
-DEMO_HAZARD_TTL_MIN = 10
+
+router = APIRouter(prefix="/demo", dependencies=[Depends(require_demo)])
+
+
+@router.post("/trigger/{preset_id}", response_model=S.Hazard, status_code=201)
+def trigger(preset_id: str, state=Depends(get_state)) -> S.Hazard:
+    p = get_preset(state.settings, preset_id)
+    if p is None:
+        raise api_error(404, "not_found", "unknown preset")
+    req = hazard_request(p)
+    if req is None:
+        raise api_error(422, "validation", "this preset has no scripted closure")
+    for h in state.hazards.list():
+        if h.source == "demo":
+            state.hazards.remove(h.hazard_id)
+    return state.hazards.add(req, source="demo")
 
 
 @router.post("/reset", status_code=204)
-async def reset(state: AppState = StateDep) -> Response:
+async def reset(state=Depends(get_state)) -> Response:
     state.hazards.clear()
-    await state.relay.reset()
-    state.journeys.clear()
+    await state.relay.end_all()
     return Response(status_code=204)
-
-
-@router.post("/trigger/{preset_id}", response_model=Hazard)
-async def trigger(preset_id: str, state: AppState = StateDep) -> Hazard:
-    p = get_preset(preset_id)
-    if p is None or p.hazard is None:
-        raise ApiError(404, "not_found", "No scripted closure for that preset.")
-    hid = f"hz_demo_{p.id}"
-    state.hazards.remove(hid)  # re-triggering replaces it: same id, same edges, deterministic
-    req = HazardCreate(kind="closure", lat=p.hazard.lat, lon=p.hazard.lon, radius_m=p.hazard.radius_m,
-                       ttl_min=DEMO_HAZARD_TTL_MIN, description=p.hazard.description)
-    return state.hazards.add(req, source="demo", hazard_id=hid)

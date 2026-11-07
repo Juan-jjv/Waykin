@@ -1,26 +1,38 @@
-"""Shared FastAPI dependencies."""
-
 from __future__ import annotations
 
 import hmac
+import json
+from functools import lru_cache
+from pathlib import Path
 
-from fastapi import Depends, Header, Request
+from fastapi import HTTPException, Request
 
-from waykin.api.errors import ApiError
-from waykin.state import AppState, get_state
-
-StateDep = Depends(get_state)
+MOCKS = Path(__file__).resolve().parent.parent / "mocks"
+DEMO = Path(__file__).resolve().parent.parent / "demo"
 
 
-def require_admin(request: Request, x_admin_token: str | None = Header(default=None)) -> None:
-    state: AppState = get_state(request)
-    if state.settings.DEMO_MODE:
+def get_state(request: Request):
+    return request.app.state.waykin
+
+
+@lru_cache(maxsize=None)
+def mock(name: str) -> dict:
+    return json.loads((MOCKS / f"{name}.json").read_text())
+
+
+def demo_presets() -> list[dict]:
+    p = DEMO / "presets.json"
+    return json.loads(p.read_text()) if p.exists() else []
+
+
+def api_error(status: int, code: str, message: str) -> HTTPException:
+    return HTTPException(status_code=status, detail={"code": code, "message": message})
+
+
+def require_admin(request: Request) -> None:
+    s = request.app.state.waykin.settings
+    if s.DEMO_MODE:
         return
-    expected = state.settings.ADMIN_TOKEN.encode()
-    if not x_admin_token or not hmac.compare_digest(x_admin_token.encode(), expected):
-        raise ApiError(401, "forbidden", "Admin token required.")
-
-
-def require_demo(request: Request) -> None:
-    if not get_state(request).settings.DEMO_MODE:
-        raise ApiError(404, "not_found", "Demo mode is off.")
+    token = request.headers.get("X-Admin-Token", "")
+    if not hmac.compare_digest(token.encode(), s.ADMIN_TOKEN.encode()):
+        raise api_error(403, "forbidden", "admin token required")
