@@ -29,7 +29,8 @@ def shortest_path(
 
     data = weights[graph.csr_edge_id].copy()
     data[blocked_mask[graph.csr_edge_id]] = 0.0
-    matrix = sp.csr_matrix((data, graph.csr.indices, graph.csr.indptr), shape=graph.csr.shape)
+    # Copies: eliminate_zeros() rewrites indices/indptr in place, and the graph's arrays are shared by every request.
+    matrix = sp.csr_matrix((data, graph.csr.indices.copy(), graph.csr.indptr.copy()), shape=graph.csr.shape)
     matrix.eliminate_zeros()
     distances, predecessors = dijkstra(matrix, directed=True, indices=src, return_predecessors=True)
     if not np.isfinite(distances[dst]):

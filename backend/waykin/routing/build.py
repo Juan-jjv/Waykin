@@ -35,8 +35,8 @@ def _download(ox, bbox):
 def _undirected_largest(ox, G):
     major = int(ox.__version__.split(".")[0])
     if major >= 2:
-        G = ox.convert.to_undirected(G)
-        return ox.truncate.largest_component(G, strongly=False)
+        # largest_component needs a directed graph in osmnx 2.x, so take it before converting.
+        return ox.convert.to_undirected(ox.truncate.largest_component(G, strongly=False))
     G = ox.utils_graph.get_undirected(G)
     return ox.utils_graph.get_largest_component(G, strongly=False)
 
