@@ -15,6 +15,8 @@ export const STR = {
   outsideArea: "Pick points inside the highlighted area",
   noPath: "No walking route found between these points",
   asOf: (d: string) => `as of ${d}`,
+  incidentCount: (n: number) => `${n} reported ${n === 1 ? "incident" : "incidents"}, last 90 days`,
+  incidentCategory: (category: string, n: number) => `${category.replace(/_/g, " ")}: ${n}`,
   showDisclaimer: "About this data",
   hideDisclaimer: "Hide",
   recommended: (label: string) => `Recommended: ${label}`,

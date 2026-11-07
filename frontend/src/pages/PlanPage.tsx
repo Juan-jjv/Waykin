@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ApiError } from "../api/client";
 import { useMeta, usePlanRoutes } from "../api/hooks";
 import type { LatLon, RoutesResponse } from "../api/types";
+import { IncidentLayer } from "../components/IncidentLayer";
 import { MapView } from "../components/MapView";
 import { PointPicker } from "../components/PointPicker";
 import { RouteLayer } from "../components/RouteLayer";
@@ -51,6 +52,7 @@ export function PlanPage() {
         <span className="muted">{STR.tagline}</span>
       </header>
       <MapView provenance={plan.data?.provenance ?? m.provenance} bbox={m.bbox} showBbox={err?.code === "outside_area"}>
+        <IncidentLayer radiusM={m.default_radius_m} />
         <PointPicker origin={origin} destination={destination} onChange={setPoints} />
         {plan.data && <RouteLayer routes={plan.data.routes} selectedId={selected} onSelect={setSelected} />}
       </MapView>

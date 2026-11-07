@@ -5,7 +5,8 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { Provenance, RoutesResponse } from "../api/types";
-import { ABSTAIN } from "../copy/strings";
+import { ABSTAIN, STR } from "../copy/strings";
+import { incidentRadius } from "./IncidentLayer";
 import { ProvenanceBanner } from "./ProvenanceBanner";
 import { RoutePanel } from "./RoutePanel";
 
@@ -32,6 +33,14 @@ function routes(status: "recommend" | "abstain", reason: RoutesResponse["decisio
 }
 
 describe("components", () => {
+  it("incident dots grow with the count, up to a cap, and the text states counts", () => {
+    expect(incidentRadius(9)).toBeGreaterThan(incidentRadius(1));
+    expect(incidentRadius(100000)).toBe(16);
+    expect(STR.incidentCount(1)).toBe("1 reported incident, last 90 days");
+    expect(STR.incidentCount(3)).toBe("3 reported incidents, last 90 days");
+    expect(STR.incidentCategory("break_and_enter", 2)).toBe("break and enter: 2");
+  });
+
   it("ProvenanceBanner shows the source and the synthetic badge", () => {
     render(<ProvenanceBanner provenance={prov} />);
     expect(screen.getByText("Synthetic data (demo)")).toBeTruthy();
