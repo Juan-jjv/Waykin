@@ -198,10 +198,229 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Who Am I */
+        get: operations["who_am_i_api_me_account_get"];
+        put?: never;
+        /** Sign Up */
+        post: operations["sign_up_api_me_account_post"];
+        /** Delete Account */
+        delete: operations["delete_account_api_me_account_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Log In */
+        post: operations["log_in_api_me_session_post"];
+        /** Log Out */
+        delete: operations["log_out_api_me_session_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/account/public-key": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Set Public Key */
+        put: operations["set_public_key_api_me_account_public_key_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/families": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** My Families */
+        get: operations["my_families_api_me_families_get"];
+        put?: never;
+        /** Create Family */
+        post: operations["create_family_api_me_families_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/families/{fid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Family Detail */
+        get: operations["family_detail_api_me_families__fid__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/families/{fid}/invites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Invite */
+        post: operations["create_invite_api_me_families__fid__invites_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/families/{fid}/invite-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Invite Preview */
+        post: operations["invite_preview_api_me_families__fid__invite_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/families/{fid}/join": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Join Family */
+        post: operations["join_family_api_me_families__fid__join_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/families/{fid}/members/{aid}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Member */
+        delete: operations["remove_member_api_me_families__fid__members__aid__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/families/{fid}/keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Rotate Keys */
+        put: operations["rotate_keys_api_me_families__fid__keys_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/families/{fid}/journeys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Family Journey
+         * @description A journey the whole family can follow. The location stream is the normal end-to-end encrypted relay; the
+         *     family only receives the journey key wrapped with the family key, which the server cannot open.
+         */
+        post: operations["start_family_journey_api_me_families__fid__journeys_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AccountOut */
+        AccountOut: {
+            /** Account Id */
+            account_id: string;
+            /** Display Name */
+            display_name: string;
+            /** Login */
+            login: string;
+            /** Public Key */
+            public_key: string | null;
+        };
+        /**
+         * AlertRef
+         * @description Raised by the walker's own device and carried inside the encrypted update: the server never sees it.
+         */
+        AlertRef: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "arrived" | "stopped" | "off_route" | "overdue" | "rerouted" | "duress";
+            /** Ts */
+            ts: number;
+        };
         /** Decision */
         Decision: {
             /**
@@ -255,6 +474,110 @@ export interface components {
             iv: string;
             /** Ct */
             ct: string;
+        };
+        /** FamilyCreate */
+        FamilyCreate: {
+            /** Name */
+            name: string;
+            /** Wrapped Key */
+            wrapped_key: string;
+        };
+        /** FamilyDetail */
+        FamilyDetail: {
+            /** Family Id */
+            family_id: string;
+            /** Name */
+            name: string;
+            /** Owner Id */
+            owner_id: string;
+            /** Key Version */
+            key_version: number;
+            /** My Wrapped Key */
+            my_wrapped_key: string | null;
+            /** My Key Version */
+            my_key_version: number | null;
+            /** Members */
+            members: components["schemas"]["FamilyMember"][];
+            /** Journeys */
+            journeys: components["schemas"]["FamilyJourneyOut"][];
+        };
+        /**
+         * FamilyEvent
+         * @description Family stream (WS /api/me/stream), server to member.
+         */
+        FamilyEvent: {
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "ready" | "journey.started" | "journey.ended" | "member.joined" | "member.left" | "family.key_rotated" | "ping";
+            /** Family Id */
+            family_id?: string | null;
+            journey?: components["schemas"]["FamilyJourneyOut"] | null;
+            /** Journey Id */
+            journey_id?: string | null;
+            /** Reason */
+            reason?: string | null;
+            /** Account Id */
+            account_id?: string | null;
+            /** Display Name */
+            display_name?: string | null;
+            /** Key Version */
+            key_version?: number | null;
+        };
+        /** FamilyJourneyCreate */
+        FamilyJourneyCreate: {
+            /**
+             * Expires In Min
+             * @default 120
+             */
+            expires_in_min: number;
+            /** Wrapped Journey Key */
+            wrapped_journey_key: string;
+            /** Key Version */
+            key_version: number;
+        };
+        /** FamilyJourneyOut */
+        FamilyJourneyOut: {
+            /** Journey Id */
+            journey_id: string;
+            /** Walker Id */
+            walker_id: string;
+            /** Walker Display Name */
+            walker_display_name: string;
+            /** Viewer Token */
+            viewer_token: string;
+            /** Wrapped Journey Key */
+            wrapped_journey_key: string;
+            /** Key Version */
+            key_version: number;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+        };
+        /** FamilyMember */
+        FamilyMember: {
+            /** Account Id */
+            account_id: string;
+            /** Display Name */
+            display_name: string;
+            /** Public Key */
+            public_key: string | null;
+            /** Is Owner */
+            is_owner: boolean;
+        };
+        /** FamilySummary */
+        FamilySummary: {
+            /** Family Id */
+            family_id: string;
+            /** Name */
+            name: string;
+            /** N Members */
+            n_members: number;
+            /** Is Owner */
+            is_owner: boolean;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -399,6 +722,37 @@ export interface components {
             /** Mean */
             mean: number;
         };
+        /** InviteCreated */
+        InviteCreated: {
+            /** Invite Token */
+            invite_token: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+        };
+        /** InvitePreview */
+        InvitePreview: {
+            /** Family Name */
+            family_name: string;
+            /** Invited By */
+            invited_by: string;
+        };
+        /** InviteToken */
+        InviteToken: {
+            /** Invite Token */
+            invite_token: string;
+        };
+        /** JoinFamily */
+        JoinFamily: {
+            /** Invite Token */
+            invite_token: string;
+            /** Wrapped Key */
+            wrapped_key: string;
+            /** Key Version */
+            key_version: number;
+        };
         /** JourneyCreate */
         JourneyCreate: {
             /**
@@ -426,6 +780,15 @@ export interface components {
              */
             relay_mode: "e2ee" | "plaintext";
         };
+        /** KeyRotation */
+        KeyRotation: {
+            /** Key Version */
+            key_version: number;
+            /** Wrapped */
+            wrapped: {
+                [key: string]: string;
+            };
+        };
         /** LatLon */
         LatLon: {
             /** Lat */
@@ -439,6 +802,13 @@ export interface components {
             lat: number;
             /** Lon */
             lon: number;
+        };
+        /** LogIn */
+        LogIn: {
+            /** Login */
+            login: string;
+            /** Password */
+            password: string;
         };
         /** Meta */
         Meta: {
@@ -494,6 +864,11 @@ export interface components {
             units: string;
             /** Disclaimer */
             disclaimer: string;
+        };
+        /** PublicKeyIn */
+        PublicKeyIn: {
+            /** Public Key */
+            public_key: string;
         };
         /**
          * RerouteRequest
@@ -563,6 +938,15 @@ export interface components {
             /** Blocked Edge Count */
             blocked_edge_count: number;
         };
+        /** SignUp */
+        SignUp: {
+            /** Display Name */
+            display_name: string;
+            /** Login */
+            login: string;
+            /** Password */
+            password: string;
+        };
         /** Thresholds */
         Thresholds: {
             /** Min Reduction */
@@ -616,6 +1000,7 @@ export interface components {
             route?: components["schemas"]["RouteRef"] | null;
             /** Note */
             note?: string | null;
+            alert?: components["schemas"]["AlertRef"] | null;
         };
         /** WsAuth */
         WsAuth: {
@@ -632,6 +1017,8 @@ export interface components {
             role: "walker" | "viewer";
             /** Token */
             token: string;
+            /** Label */
+            label?: string | null;
         };
         /** WsEnd */
         WsEnd: {
@@ -716,6 +1103,40 @@ export interface components {
             hazard_added?: components["schemas"]["HazardAdded"] | null;
             hazard_removed?: components["schemas"]["HazardRemoved"] | null;
             ping?: components["schemas"]["WsPing"] | null;
+            alert?: components["schemas"]["AlertRef"] | null;
+            viewers?: components["schemas"]["WsViewers"] | null;
+            walker_silent?: components["schemas"]["WsWalkerSilent"] | null;
+            family_event?: components["schemas"]["FamilyEvent"] | null;
+        };
+        /**
+         * WsViewers
+         * @description Server to walker: how many people are viewing (sent on connect and whenever it changes).
+         */
+        WsViewers: {
+            /**
+             * Type
+             * @default viewers
+             * @enum {string}
+             */
+            type: "viewers" | "viewer_joined" | "viewer_left";
+            /** Count */
+            count: number;
+            /** Label */
+            label?: string | null;
+        };
+        /**
+         * WsWalkerSilent
+         * @description Server to viewers: no message from the walker's phone for `silent_s` seconds. Timing only, no location.
+         */
+        WsWalkerSilent: {
+            /**
+             * Type
+             * @default walker_silent
+             * @constant
+             */
+            type: "walker_silent";
+            /** Silent S */
+            silent_s: number;
         };
     };
     responses: never;
@@ -1054,6 +1475,442 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    who_am_i_api_me_account_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountOut"];
+                };
+            };
+        };
+    };
+    sign_up_api_me_account_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignUp"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_account_api_me_account_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    log_in_api_me_session_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LogIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    log_out_api_me_session_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    set_public_key_api_me_account_public_key_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicKeyIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    my_families_api_me_families_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FamilySummary"][];
+                };
+            };
+        };
+    };
+    create_family_api_me_families_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FamilyCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FamilyDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    family_detail_api_me_families__fid__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FamilyDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_invite_api_me_families__fid__invites_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteCreated"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    invite_preview_api_me_families__fid__invite_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteToken"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitePreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    join_family_api_me_families__fid__join_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JoinFamily"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FamilyDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_member_api_me_families__fid__members__aid__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fid: string;
+                aid: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rotate_keys_api_me_families__fid__keys_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KeyRotation"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_family_journey_api_me_families__fid__journeys_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                fid: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FamilyJourneyCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JourneyCreated"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
             };
         };
     };

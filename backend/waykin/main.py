@@ -17,7 +17,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from waykin.api import demo, hazards, journeys, meta, routes
+from waykin.accounts.hub import FamilyHub
+from waykin.accounts.store import AccountStore
+from waykin.api import demo, hazards, journeys, me, meta, routes
 from waykin.api.deps import mock
 from waykin.config import Settings
 from waykin.realtime.hazard_store import HazardStore
@@ -31,7 +33,7 @@ log = logging.getLogger("waykin")
 access = logging.getLogger("waykin.access")
 DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
 SWEEP_S = 15.0
-NO_STORE = ("/api/routes", "/api/journeys", "/api/relay")
+NO_STORE = ("/api/routes", "/api/journeys", "/api/relay", "/api/me")
 CSP = ("default-src 'self'; img-src 'self' data: blob: https://tiles.openfreemap.org; "
        "worker-src 'self' blob:; "   # MapLibre runs its tile workers from blob: URLs
        "connect-src 'self' wss: ws: https://tiles.openfreemap.org https://photon.komoot.io")
@@ -45,7 +47,8 @@ def build_state(settings: Settings) -> tuple[AppState, HazardStreamHub]:
         fixture = Hazard.model_validate(mock("hazard_closure"))
         hub = HazardStreamHub(lambda: state.hazards, mock_fixture=fixture)
         hstore = HazardStore(n_edges=0, edge_mapper=lambda req: fixture.edge_ids, on_change=hub.publish)
-        state = AppState(settings=settings, graph=None, exposure=None, hazards=hstore, journeys=jstore, relay=relay)
+        state = AppState(settings=settings, graph=None, exposure=None, hazards=hstore, journeys=jstore, relay=relay,
+                         accounts=AccountStore(settings.accounts_db_path), family_hub=FamilyHub())
         return state, hub
     from waykin.data.bundle import load_exposure
     from waykin.routing.graph import load_graph
@@ -58,7 +61,8 @@ def build_state(settings: Settings) -> tuple[AppState, HazardStreamHub]:
     hstore = HazardStore(n_edges=graph.n_edges,
                          edge_mapper=lambda req: hazard_edges(graph, req.lat, req.lon, req.radius_m).tolist(),
                          on_change=hub.publish)
-    state = AppState(settings=settings, graph=graph, exposure=bundle, hazards=hstore, journeys=jstore, relay=relay)
+    state = AppState(settings=settings, graph=graph, exposure=bundle, hazards=hstore, journeys=jstore, relay=relay,
+                     accounts=AccountStore(settings.accounts_db_path), family_hub=FamilyHub())
     return state, hub
 
 
@@ -73,6 +77,9 @@ def create_app(settings: Settings | None = None, state: AppState | None = None) 
             app.state.waykin = state
             app.state.hazard_stream = HazardStreamHub(lambda: state.hazards)
             state.hazards.on_change = app.state.hazard_stream.publish
+        st = app.state.waykin
+        me.ensure_accounts(st)
+        st.relay.on_end = lambda jid, reason: me.announce_end(st, jid, reason)
         if not settings.DEMO_MODE and not settings.WAYKIN_MOCK:
             log.warning("admin token for hazard posting: %s", settings.ADMIN_TOKEN)
         sweeper = asyncio.create_task(_sweep(app))
@@ -98,7 +105,7 @@ def create_app(settings: Settings | None = None, state: AppState | None = None) 
         return response
 
     _install_error_handlers(app)
-    for r in (meta.router, routes.router, journeys.router, hazards.router, demo.router):
+    for r in (meta.router, routes.router, journeys.router, hazards.router, demo.router, me.router):
         app.include_router(r, prefix="/api")
 
     if DIST.is_dir():

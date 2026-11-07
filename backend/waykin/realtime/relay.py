@@ -63,17 +63,31 @@ def valid_envelope(env) -> bool:
             and isinstance(ct, str) and len(ct) >= 22 and bool(B64URL.match(ct)))
 
 
+_CONTROL = re.compile(r"[\x00-\x1f\x7f]")
+
+
+def clean_label(raw) -> str | None:
+    """A viewer's self-chosen display name: short, printable, or nothing."""
+    if not isinstance(raw, str):
+        return None
+    label = _CONTROL.sub("", raw).strip()[:40]
+    return label or None
+
+
 class RelayHub:
     def __init__(self, journeys: JourneyStore, relay_mode: str):
         self.journeys = journeys
         self.relay_mode = relay_mode
         self.rooms: dict[str, _Room] = {}
+        self.on_end = None   # optional async callback(journey_id, reason), used by the family hub
 
     # ------------------------------------------------------------ lifecycle
     async def end(self, jid: str, reason: str) -> None:
         """Tell viewers, close every socket with 4410, purge the journey."""
         room = self.rooms.pop(jid, None)
         self.journeys.purge(jid, reason)
+        if self.on_end is not None:
+            await self.on_end(jid, reason)
         if room is None:
             return
         msg = json.dumps({"type": "ended", "reason": reason})
@@ -86,6 +100,25 @@ class RelayHub:
     async def sweep(self) -> None:
         for jid in self.journeys.sweep_expired():
             await self.end(jid, "expired")
+        await self.check_silence()
+
+    async def check_silence(self, silent_after_s: float = C.WALKER_SILENT_S) -> None:
+        """Tell viewers when the walker's phone has gone quiet. Uses only message timing, never location."""
+        t = time.monotonic()
+        for jid, room in list(self.rooms.items()):
+            j = self.journeys.get(jid)
+            if j is None or not room.viewers or not j.last_walker_at or j.silent_sent:
+                continue
+            quiet = t - j.last_walker_at
+            if quiet >= silent_after_s:
+                j.silent_sent = True
+                msg = json.dumps({"type": "walker_silent", "silent_s": int(quiet)})
+                for v in list(room.viewers):
+                    await _safe_send(v, msg)
+
+    async def _tell_walker(self, room: "_Room", message: dict) -> None:
+        if room.walker is not None:
+            await _safe_send(room.walker, json.dumps(message))
 
     async def end_all(self) -> None:
         for jid in list(self.rooms) + [j for j in self.journeys.clear()]:
@@ -95,7 +128,7 @@ class RelayHub:
     async def handle(self, ws: WebSocket, jid: str) -> None:
         await ws.accept()
         try:
-            role, journey = await self._auth(ws, jid)
+            role, journey, label = await self._auth(ws, jid)
         except _Close as c:
             await _safe_close(ws, c.code)
             return
@@ -104,6 +137,7 @@ class RelayHub:
             if room.walker is not None:
                 await _safe_close(room.walker, 1000)  # a new walker connection replaces the old one
             room.walker = ws
+            journey.last_walker_at, journey.silent_sent = time.monotonic(), False
         else:
             if len(room.viewers) >= C.RELAY_MAX_VIEWERS:
                 await _safe_close(ws, CLOSE_RATE)
@@ -111,8 +145,12 @@ class RelayHub:
             room.viewers.add(ws)
         await ws.send_text(json.dumps({"type": "ready", "relay_mode": self.relay_mode,
                                        "expires_at": journey.expires_at.isoformat()}))
-        if role == "viewer" and journey.latest is not None:
-            await ws.send_text(journey.latest)
+        if role == "walker":
+            await self._tell_walker(room, {"type": "viewers", "count": len(room.viewers)})
+        else:
+            await self._tell_walker(room, {"type": "viewer_joined", "count": len(room.viewers), "label": label})
+            if journey.latest is not None:
+                await ws.send_text(journey.latest)
         try:
             if role == "walker":
                 await self._walker_loop(ws, jid)
@@ -125,7 +163,9 @@ class RelayHub:
         finally:
             room = self.rooms.get(jid)
             if room is not None:
-                room.viewers.discard(ws)
+                if ws in room.viewers:
+                    room.viewers.discard(ws)
+                    await self._tell_walker(room, {"type": "viewer_left", "count": len(room.viewers)})
                 if room.walker is ws:
                     room.walker = None
 
@@ -141,7 +181,7 @@ class RelayHub:
             j = self.journeys.verify(jid, msg["role"], str(msg.get("token", "")))
         except JourneyError as e:
             raise _Close(e.close_code) from None
-        return msg["role"], j
+        return msg["role"], j, clean_label(msg.get("label")) if msg["role"] == "viewer" else None
 
     async def _viewer_loop(self, ws: WebSocket) -> None:
         while True:  # viewers only listen; anything they send is ignored
@@ -163,6 +203,7 @@ class RelayHub:
             journey = self.journeys.get(jid)
             if journey is None:
                 raise _Close(CLOSE_ENDED)
+            journey.last_walker_at, journey.silent_sent = time.monotonic(), False
             if kind == "end":
                 reason = msg.get("reason")
                 if reason not in ("arrived", "stopped"):
