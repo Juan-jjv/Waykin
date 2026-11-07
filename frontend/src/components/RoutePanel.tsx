@@ -1,7 +1,6 @@
 import type { RouteOption, RoutesResponse } from "../api/types";
 import { routeLabelText, strings } from "../copy/strings";
 import { AbstainCard } from "./AbstainCard";
-import { RadiusBadge } from "./RadiusBadge";
 import { RouteCard } from "./RouteCard";
 
 export function RoutePanel({
@@ -46,7 +45,6 @@ export function RoutePanel({
           onStartWalk={() => onStartWalk(route)}
         />
       ))}
-      {decision.radius_sensitive ? <RadiusBadge decisions={decision.radius_decisions} /> : null}
       {walkNote ? (
         <p className="walk-note" role="status">
           {walkNote}

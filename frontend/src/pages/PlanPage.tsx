@@ -1,13 +1,13 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ApiError, TraceError } from "../api/client";
+import { insideBBox, type Place } from "../api/geocode";
 import { useIncidents, useMeta, usePlanRoutes } from "../api/hooks";
-import type { DemoPreset, LatLon, RadiusM, RouteOption } from "../api/types";
+import type { DemoPreset, LatLon, RouteOption } from "../api/types";
 import { CategoryFilter } from "../components/CategoryFilter";
 import { IncidentLayer, IncidentToggle } from "../components/IncidentLayer";
 import { MapView } from "../components/MapView";
-import { PointMarkers, PointSummary } from "../components/PointPicker";
+import { PointMarkers, PointSearch } from "../components/PointPicker";
 import { PresetPicker } from "../components/PresetPicker";
-import { RadiusSelect } from "../components/RadiusSelect";
 import { FitRoutes, RouteLayer, SegmentFocus } from "../components/RouteLayer";
 import { RoutePanel, RouteSkeleton } from "../components/RoutePanel";
 import { strings } from "../copy/strings";
@@ -19,7 +19,8 @@ export function PlanPage() {
   const meta = metaQuery.data;
   const [origin, setOrigin] = useState<LatLon | null>(null);
   const [destination, setDestination] = useState<LatLon | null>(null);
-  const [radius, setRadius] = useState<number | null>(null);
+  const [originLabel, setOriginLabel] = useState<string | null>(null);
+  const [destinationLabel, setDestinationLabel] = useState<string | null>(null);
   const [categories, setCategories] = useState<string[] | null>(null);
   const [incidentsOn, setIncidentsOn] = useState(true);
   const [presetId, setPresetId] = useState<string | null>(null);
@@ -29,10 +30,28 @@ export function PlanPage() {
   const [segmentRouteId, setSegmentRouteId] = useState<string | null>(null);
   const [walkNote, setWalkNote] = useState<string | null>(null);
   const plan = usePlanRoutes();
+  const touchedOrigin = useRef(false);
 
-  const activeRadius = radius ?? meta?.default_radius_m ?? 100;
+  const radius = meta?.default_radius_m ?? 100;
   const activeCategories = categories ?? meta?.categories ?? [];
-  const incidents = useIncidents(activeRadius, activeCategories, Boolean(meta) && incidentsOn);
+  const showIncidents = incidentsOn && activeCategories.length > 0;
+  const incidents = useIncidents(radius, activeCategories, Boolean(meta) && showIncidents);
+
+  const bbox = meta?.bbox;
+  useEffect(() => {
+    if (!bbox || !("geolocation" in navigator)) return;
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const here = { lat: position.coords.latitude, lon: position.coords.longitude };
+        if (touchedOrigin.current || !insideBBox(here, bbox)) return;
+        setOrigin(here);
+        setOriginLabel(strings.yourLocation);
+        setFocus({ token: Date.now(), geometry: [[here.lat, here.lon]] });
+      },
+      () => undefined,
+      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 },
+    );
+  }, [bbox]);
 
   function clearPlan() {
     plan.reset();
@@ -43,23 +62,37 @@ export function PlanPage() {
     setRouteToken(0);
   }
 
-  function updateOrigin(point: LatLon) {
-    setPresetId(null);
-    setOrigin(point);
-    clearPlan();
+  function focusOn(points: (LatLon | null)[]) {
+    const geometry = points.filter((p): p is LatLon => p !== null).map((p) => [p.lat, p.lon]);
+    if (geometry.length > 0) setFocus({ token: Date.now(), geometry });
   }
 
-  function updateDestination(point: LatLon) {
+  function updateOrigin(point: LatLon, label: string) {
+    touchedOrigin.current = true;
+    setPresetId(null);
+    setOrigin(point);
+    setOriginLabel(label);
+    clearPlan();
+    focusOn([point, destination]);
+  }
+
+  function updateDestination(point: LatLon, label: string) {
     setPresetId(null);
     setDestination(point);
+    setDestinationLabel(label);
     clearPlan();
+    focusOn([origin, point]);
   }
 
   function applyPreset(preset: DemoPreset) {
+    touchedOrigin.current = true;
     setPresetId(preset.id);
     setOrigin(preset.origin);
     setDestination(preset.destination);
+    setOriginLabel(strings.presetStart(preset.name));
+    setDestinationLabel(strings.presetEnd(preset.name));
     clearPlan();
+    focusOn([preset.origin, preset.destination]);
   }
 
   function swapPoints() {
@@ -67,14 +100,29 @@ export function PlanPage() {
     setPresetId(null);
     setOrigin(destination);
     setDestination(origin);
+    setOriginLabel(destinationLabel);
+    setDestinationLabel(originLabel);
     clearPlan();
   }
 
   function clearPoints() {
+    touchedOrigin.current = true;
     setPresetId(null);
     setOrigin(null);
     setDestination(null);
+    setOriginLabel(null);
+    setDestinationLabel(null);
     clearPlan();
+  }
+
+  function changeCategories(next: string[]) {
+    setCategories(next);
+    setIncidentsOn(next.length > 0);
+  }
+
+  function toggleIncidents(next: boolean) {
+    if (next && activeCategories.length === 0 && meta) setCategories(meta.categories);
+    setIncidentsOn(next);
   }
 
   function findRoutes() {
@@ -83,7 +131,7 @@ export function PlanPage() {
     setFocus(null);
     setSegmentRouteId(null);
     plan.mutate(
-      { origin, destination, radius_m: activeRadius as RadiusM },
+      { origin, destination },
       {
         onSuccess: (data) => {
           const fastest = data.routes.find((route) => route.label === "fastest");
@@ -141,20 +189,20 @@ export function PlanPage() {
   return (
     <div className="app-shell">
       <div className="map-stage">
-        <MapView bbox={meta.bbox} showBBox={outside} picking={!origin || !destination}>
-          {incidentsOn && incidents.data ? <IncidentLayer points={incidents.data.points} /> : null}
+        <MapView bbox={meta.bbox} showBBox={outside}>
+          {showIncidents && incidents.data ? <IncidentLayer points={incidents.data.points} /> : null}
           {plan.isSuccess && plan.data ? (
             <>
               <RouteLayer routes={plan.data.routes} selectedId={selectedId} onSelect={setSelectedId} />
               <FitRoutes token={routeToken} routes={plan.data.routes} />
-              <SegmentFocus focus={focus} />
             </>
           ) : null}
+          <SegmentFocus focus={focus} />
           <PointMarkers
             origin={origin}
             destination={destination}
-            onOrigin={updateOrigin}
-            onDestination={updateDestination}
+            onOrigin={(point) => updateOrigin(point, strings.droppedPin)}
+            onDestination={(point) => updateDestination(point, strings.droppedPin)}
           />
         </MapView>
       </div>
@@ -166,23 +214,25 @@ export function PlanPage() {
         {meta.demo_mode ? (
           <PresetPicker presets={meta.demo_presets} selectedId={presetId} onSelect={applyPreset} />
         ) : null}
-        <PointSummary origin={origin} destination={destination} onSwap={swapPoints} onClear={clearPoints} />
-        <RadiusSelect
-          radii={meta.radii}
-          value={activeRadius}
-          onChange={(next) => {
-            setRadius(next);
-            clearPlan();
-          }}
+        <PointSearch
+          originLabel={originLabel}
+          destinationLabel={destinationLabel}
+          bbox={meta.bbox}
+          canSwap={ready}
+          canClear={Boolean(origin || destination)}
+          onOrigin={(place: Place) => updateOrigin(place.point, place.label)}
+          onDestination={(place: Place) => updateDestination(place.point, place.label)}
+          onSwap={swapPoints}
+          onClear={clearPoints}
         />
         <section className="incident-controls">
-          <IncidentToggle on={incidentsOn} onChange={setIncidentsOn} />
-          <CategoryFilter categories={meta.categories} selected={activeCategories} onChange={setCategories} />
+          <IncidentToggle on={showIncidents} onChange={toggleIncidents} />
+          <CategoryFilter categories={meta.categories} selected={activeCategories} onChange={changeCategories} />
         </section>
         <button type="button" className="btn-primary find" onClick={findRoutes} disabled={!ready || plan.isPending}>
           {plan.isPending ? strings.finding : strings.findRoutes}
         </button>
-        {showHint ? <p className="hint">{ready ? strings.findHint : strings.tapHint}</p> : null}
+        {showHint ? <p className="hint">{ready ? strings.findHint : strings.searchHint}</p> : null}
         {plan.isPending ? <RouteSkeleton /> : null}
         {plan.isError ? <p className="notice">{routeErrorCopy(plan.error)}</p> : null}
         {plan.isSuccess && plan.data ? (

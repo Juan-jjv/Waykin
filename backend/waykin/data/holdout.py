@@ -12,6 +12,7 @@ import numpy as np
 from waykin import constants as C
 from waykin.data.allocation import build_allocation
 from waykin.data.pipeline import make_bundle, pivot_locations, row_counts
+from waykin.data.sources.base import category_config
 from waykin.data.stability import assess
 from waykin.routing import router
 from waykin.routing.types import NoPathError
@@ -27,7 +28,7 @@ def holdout(graph, source, bbox, categories: list[str], category_preset: str, tr
     test = pivot_locations(source.window(bbox, categories, split, as_of))
     bundle = make_bundle(train, graph, [radius_m], source=source.name, source_label=source.label, as_of=split,
                          category_preset=category_preset, categories=categories)
-    A_test, _ = build_allocation(test, graph, radius_m)
+    A_test, _ = build_allocation(test, graph, radius_m, category_config().severity)
     later = np.asarray(A_test.T @ row_counts(test, A_test))
 
     recommended_reports, fastest_reports = [], []

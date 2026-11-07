@@ -16,6 +16,7 @@ _Draft by A4 for S2. Every "protected" line has a test in `backend/tests/privacy
 - **Anyone holding the share link can follow the walk.** The link is the key. Share it like a house key.
 - **The server sees metadata:** journey ids, when a walk starts and ends, message rate and size, and IP addresses.
 - **Route and reroute requests reveal origin, position and destination to the server in transit.** They are not stored or logged, but the server must see them to compute a route.
+- **Place search goes to a third party.** What you type in the start and destination boxes is sent from the browser to the public Photon geocoder (photon.komoot.io), with your IP address. The device's own location is never sent there.
 - **A compromised phone or browser defeats everything** (malicious extensions, malware, someone with the unlocked phone).
 - **Plaintext fallback mode (`RELAY_PLAINTEXT=1`) has no confidentiality.** If we ship it, we drop the encryption claim.
 - Hosting/TLS-terminating proxies (e.g. a tunnel provider) see the same metadata the server sees.

@@ -11,14 +11,13 @@ import { AppearanceButton } from "./AppearanceButton";
 interface MapViewProps {
   bbox: number[];
   showBBox: boolean;
-  picking: boolean;
   children?: ReactNode;
 }
 
 const BBOX_SOURCE = "waykin-bbox";
 const BBOX_LAYERS = ["waykin-bbox-fill", "waykin-bbox-line"];
 
-export function MapView({ bbox, showBBox, picking, children }: MapViewProps) {
+export function MapView({ bbox, showBBox, children }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { appearance } = useAppearance();
   const appearanceRef = useRef(appearance);
@@ -131,7 +130,7 @@ export function MapView({ bbox, showBBox, picking, children }: MapViewProps) {
   }, [map, showBBox, west, south, east, north]);
 
   return (
-    <div className={picking ? "map-frame is-picking" : "map-frame"}>
+    <div className="map-frame">
       <div ref={containerRef} className="map-root" />
       <MapProvider map={map}>{map ? children : null}</MapProvider>
       <AppearanceButton />

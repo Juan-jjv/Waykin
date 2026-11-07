@@ -1,7 +1,9 @@
+import json
+
 import numpy as np
 import pandas as pd
 
-from waykin.data.allocation import build_allocation, prior_node_ids
+from waykin.data.allocation import build_allocation, catchment_radii, prior_node_ids
 from waykin.routing.graph import latlon_to_utm, utm_to_latlon
 
 
@@ -46,6 +48,20 @@ def test_prior_nodes_are_only_nodes_away_from_published_points(grid):
     x, y = latlon_to_utm(grid.node_lat[:1], grid.node_lon[:1])
     ids = prior_node_ids(np.asarray(x), np.asarray(y), grid)
     assert 0 not in ids and len(ids) == grid.n_nodes - 1
+
+
+def test_severe_reports_reach_more_streets(grid):
+    n = 13
+    def at_node(by_category):
+        return pd.DataFrame({"lat": [grid.node_lat[n]], "lon": [grid.node_lon[n]],
+                             "counts_by_category": [json.dumps(by_category)]})
+    severity = {"homicide": 2.0, "theft": 0.75}
+    severe, s_stats = build_allocation(at_node({"homicide": 1}), grid, 100, severity)
+    minor, m_stats = build_allocation(at_node({"theft": 1}), grid, 100, severity)
+    assert severe[0].nnz > minor[0].nnz
+    assert s_stats["mean_radius_m"] == 200.0 and m_stats["mean_radius_m"] == 75.0
+    mixed = catchment_radii(at_node({"homicide": 1, "theft": 3}), 100, severity)
+    assert np.isclose(mixed[0], 100 * (2.0 + 3 * 0.75) / 4)
 
 
 def test_no_published_points_makes_every_node_a_prior_row(grid):

@@ -77,10 +77,6 @@ button { font: inherit; }
 
 .map-frame { position: relative; }
 
-.map-frame.is-picking .maplibregl-canvas-container.maplibregl-interactive {
-  cursor: crosshair;
-}
-
 .maplibregl-ctrl-top-left {
   top: 12px;
   left: 12px;
@@ -298,8 +294,7 @@ button { font: inherit; }
 .route-card,
 .abstain-card,
 .notice,
-.walk-note,
-.radius-badge {
+.walk-note {
   background: var(--card);
   border-radius: 14px;
 }
@@ -329,47 +324,73 @@ button { font: inherit; }
 
 .points { padding: 2px 14px; }
 
-.point-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 11px 0;
+.place-search {
+  position: relative;
   border-bottom: 0.5px solid var(--separator);
-  font-variant-numeric: tabular-nums;
 }
 
-.point-row:last-child { border-bottom: none; }
-.point-row span:first-child { color: var(--text-secondary); }
-.point-row span:last-child { text-align: right; }
+.place-search:last-child { border-bottom: none; }
+
+.place-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.place-label span {
+  flex: 0 0 44px;
+  color: var(--text-secondary);
+}
+
+.place-label input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 0;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: right;
+  outline: none;
+}
+
+.place-label input::placeholder { color: var(--text-secondary); opacity: 0.8; }
+.place-label input:focus { text-align: left; }
+.place-label input::-webkit-search-cancel-button { cursor: pointer; }
+
+.place-results {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: -14px;
+  right: -14px;
+  max-height: 260px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--card);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+}
+
+.place-option,
+.place-status {
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.place-option { cursor: pointer; }
+.place-option.active { background: var(--fill); }
+.place-status { color: var(--text-secondary); }
 
 .point-actions {
   display: flex;
   gap: 8px;
   margin-top: 8px;
-}
-
-.segmented {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 2px;
-  padding: 2px;
-  border-radius: 10px;
-  background: var(--fill);
-}
-
-.segmented button {
-  border: none;
-  border-radius: 8px;
-  padding: 8px 0;
-  background: transparent;
-  color: var(--text);
-  cursor: pointer;
-}
-
-.segmented button[aria-checked="true"] {
-  background: var(--card);
-  font-weight: 650;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 
 .incident-controls { margin-top: 16px; }
@@ -534,30 +555,6 @@ button { font: inherit; }
 .explanation { margin-top: 8px; color: var(--text-secondary); font-size: 14px; }
 .card-actions { display: flex; gap: 8px; margin: 12px 0; }
 .route-card .btn-primary { width: 100%; padding: 12px 14px; }
-
-.radius-badge { padding: 4px; }
-.radius-badge-btn {
-  width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: 12px;
-  background: transparent;
-  color: var(--text);
-  text-align: left;
-  font-weight: 650;
-  cursor: pointer;
-}
-
-.radius-list { list-style: none; margin: 0; padding: 0 12px 12px; }
-.radius-list li {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 0;
-  border-top: 0.5px solid var(--separator);
-  font-size: 14px;
-}
-.radius-list li span:last-child { color: var(--text-secondary); text-align: right; }
 
 .wk-pin-wrap,
 .wk-end-wrap {

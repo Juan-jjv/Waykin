@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef } from "react";
-import { Map as MapLibreMap, Marker, type MapMouseEvent } from "maplibre-gl";
+import { useEffect, useRef } from "react";
+import { Map as MapLibreMap, Marker } from "maplibre-gl";
+import type { Place } from "../api/geocode";
 import type { LatLon } from "../api/types";
-import { formatCoord } from "../copy/format";
 import { strings } from "../copy/strings";
 import { useWaykinMap } from "../map/context";
+import { PlaceSearch } from "./PlaceSearch";
 
 interface PointMarkerProps {
   origin: LatLon | null;
@@ -12,34 +13,13 @@ interface PointMarkerProps {
   onDestination: (point: LatLon) => void;
 }
 
+/** Start and end pins. Points are chosen by search; dragging a pin fine-tunes it. */
 export function PointMarkers({ origin, destination, onOrigin, onDestination }: PointMarkerProps) {
   const map = useWaykinMap();
   const onOriginRef = useRef(onOrigin);
   const onDestinationRef = useRef(onDestination);
   onOriginRef.current = onOrigin;
   onDestinationRef.current = onDestination;
-  const originRef = useRef(origin);
-  const destinationRef = useRef(destination);
-  originRef.current = origin;
-  destinationRef.current = destination;
-
-  useEffect(() => {
-    const onClick = (event: MapMouseEvent) => {
-      const target = event.originalEvent.target;
-      if (target instanceof Element && target.closest(".maplibregl-marker, .maplibregl-ctrl, .wk-pin-wrap, .wk-end-wrap")) {
-        return;
-      }
-      const layers = ["waykin-incidents", "waykin-route-hit"].filter((id) => Boolean(map.getLayer(id)));
-      if (layers.length > 0 && map.queryRenderedFeatures(event.point, { layers }).length > 0) return;
-      const point = { lat: event.lngLat.lat, lon: event.lngLat.lng };
-      if (!originRef.current) onOriginRef.current(point);
-      else if (!destinationRef.current) onDestinationRef.current(point);
-    };
-    map.on("click", onClick);
-    return () => {
-      map.off("click", onClick);
-    };
-  }, [map]);
 
   useDragMarker(map, origin, "start", (point) => onOriginRef.current(point));
   useDragMarker(map, destination, "end", (point) => onDestinationRef.current(point));
@@ -109,40 +89,38 @@ function endElement(): HTMLElement {
   return wrap;
 }
 
-export function PointSummary({
-  origin,
-  destination,
+export function PointSearch({
+  originLabel,
+  destinationLabel,
+  bbox,
+  canSwap,
+  canClear,
+  onOrigin,
+  onDestination,
   onSwap,
   onClear,
 }: {
-  origin: LatLon | null;
-  destination: LatLon | null;
+  originLabel: string | null;
+  destinationLabel: string | null;
+  bbox: number[];
+  canSwap: boolean;
+  canClear: boolean;
+  onOrigin: (place: Place) => void;
+  onDestination: (place: Place) => void;
   onSwap: () => void;
   onClear: () => void;
 }) {
-  const rows = useMemo(
-    () => [
-      { label: strings.start, point: origin },
-      { label: strings.end, point: destination },
-    ],
-    [origin, destination],
-  );
-
   return (
     <div className="point-block">
       <div className="points">
-        {rows.map((row) => (
-          <div className="point-row" key={row.label}>
-            <span>{row.label}</span>
-            <span>{row.point ? formatCoord(row.point.lat, row.point.lon) : strings.tapTheMap}</span>
-          </div>
-        ))}
+        <PlaceSearch label={strings.start} placeholder={strings.searchStart} value={originLabel} bbox={bbox} onSelect={onOrigin} />
+        <PlaceSearch label={strings.end} placeholder={strings.searchEnd} value={destinationLabel} bbox={bbox} onSelect={onDestination} />
       </div>
       <div className="point-actions">
-        <button type="button" className="btn-quiet" onClick={onSwap} disabled={!origin || !destination}>
+        <button type="button" className="btn-quiet" onClick={onSwap} disabled={!canSwap}>
           {strings.swap}
         </button>
-        <button type="button" className="btn-quiet" onClick={onClear} disabled={!origin && !destination}>
+        <button type="button" className="btn-quiet" onClick={onClear} disabled={!canClear}>
           {strings.clear}
         </button>
       </div>

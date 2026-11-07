@@ -1,5 +1,4 @@
-import type { AbstainReason, Interval, RouteLabel } from "../api/types";
-import { abstainCopy, routeLabelText } from "./strings";
+import type { Interval } from "../api/types";
 
 export function formatAsOf(iso: string): string {
   const [year, month, day] = iso.split("-").map(Number);
@@ -33,32 +32,4 @@ export function formatExtra(minutes: number): string | null {
   const rounded = Math.round(minutes);
   if (rounded <= 0) return null;
   return `+${rounded} min`;
-}
-
-export function formatCoord(lat: number, lon: number): string {
-  return `${lat.toFixed(4)}, ${lon.toFixed(4)}`;
-}
-
-export function formatRadiusDecision(value: string): string {
-  const [status, detail] = value.split(":");
-  if (status === "recommend" && isRouteLabel(detail)) {
-    return `Recommends ${routeLabelText[detail]}`;
-  }
-  if (status === "abstain" && isAbstainReason(detail)) {
-    return abstainCopy[detail].headline;
-  }
-  return value;
-}
-
-function isRouteLabel(value: string | undefined): value is RouteLabel {
-  return value === "fastest" || value === "balanced" || value === "lower_exposure";
-}
-
-function isAbstainReason(value: string | undefined): value is AbstainReason {
-  return (
-    value === "thin_data" ||
-    value === "indistinguishable" ||
-    value === "too_costly" ||
-    value === "no_alternative"
-  );
 }
