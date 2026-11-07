@@ -1,4 +1,9 @@
+"""Internal route candidate types shared with data assessment."""
+
+from __future__ import annotations
+
 from dataclasses import dataclass
+from hashlib import blake2b
 from typing import Literal
 
 import numpy as np
@@ -9,30 +14,41 @@ RouteLabel = Literal["fastest", "balanced", "lower_exposure", "uncapped"]
 @dataclass(frozen=True)
 class Candidate:
     label: RouteLabel
-    route_id: str            # first 10 hex chars of blake2b(edge_ids.tobytes())
-    edge_ids: np.ndarray     # int32, in order from origin to destination
-    node_ids: np.ndarray     # int32
+    route_id: str
+    edge_ids: np.ndarray
+    node_ids: np.ndarray
     minutes: float
     distance_m: float
-    exposure_mean: float     # sum of bundle.mean[radius][edge_ids]
-    lam: float               # λ that produced it
+    exposure_mean: float
+    lam: float = 0.0
 
 
 @dataclass
 class CandidateSet:
     fastest: Candidate
-    alternatives: list[Candidate]   # "balanced" and/or "lower_exposure", each ≤ (1+MAX_EXTRA_TIME)·fastest.minutes
-    uncapped: Candidate | None      # lowest-exposure Pareto route ABOVE the time cap. Internal only.
+    alternatives: list[Candidate]
+    uncapped: Candidate | None = None
+
+    @property
+    def lower_exposure(self) -> Candidate | None:
+        return next((item for item in self.alternatives if item.label == "lower_exposure"), None)
+
+    @property
+    def balanced(self) -> Candidate | None:
+        return next((item for item in self.alternatives if item.label == "balanced"), None)
+
+    @property
+    def candidates(self) -> tuple[Candidate, ...]:
+        return (self.fastest, *self.alternatives, *((self.uncapped,) if self.uncapped is not None else ()))
 
 
-class OutsideAreaError(Exception):
-    ...
+class OutsideAreaError(ValueError):
+    """A route endpoint is outside or too far from the demo graph."""
 
 
-class NoPathError(Exception):
-    ...
+class NoPathError(ValueError):
+    """No unblocked walking path connects the snapped nodes."""
 
 
 def route_id_for(edge_ids: np.ndarray) -> str:
-    import hashlib
-    return hashlib.blake2b(np.asarray(edge_ids, dtype=np.int32).tobytes()).hexdigest()[:10]
+    return blake2b(np.asarray(edge_ids, dtype=np.int32).tobytes()).hexdigest()[:10]
