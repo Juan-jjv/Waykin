@@ -1,6 +1,9 @@
 # Data: EPS data and build artifacts are never committed
 data/raw/
 data/build/
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
 *.npy
 *.npz
 *.parquet
