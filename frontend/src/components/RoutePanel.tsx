@@ -1,4 +1,4 @@
-import type { RouteOption, RoutesResponse } from "../api/tmp-types";
+import type { RouteOption, RoutesResponse } from "../api/types";
 import { routeLabelText, strings } from "../copy/strings";
 import { AbstainCard } from "./AbstainCard";
 import { RadiusBadge } from "./RadiusBadge";

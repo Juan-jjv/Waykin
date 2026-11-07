@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Map as MapLibreMap, NavigationControl } from "maplibre-gl";
 import type { FeatureCollection } from "geojson";
-import type { BBox } from "../api/tmp-types";
 import { MapProvider } from "../map/context";
 import { fitPadding } from "../map/fitPadding";
 import { keepWaykinStyle, removeMapSource, setGeoJson, whenStyleReady } from "../map/geojson";
@@ -10,7 +9,7 @@ import { useAppearance } from "../theme/appearance";
 import { AppearanceButton } from "./AppearanceButton";
 
 interface MapViewProps {
-  bbox: BBox;
+  bbox: number[];
   showBBox: boolean;
   picking: boolean;
   children?: ReactNode;

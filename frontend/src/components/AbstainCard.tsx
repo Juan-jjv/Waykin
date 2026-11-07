@@ -1,4 +1,4 @@
-import type { AbstainReason } from "../api/tmp-types";
+import type { AbstainReason } from "../api/types";
 import { abstainCopy, strings } from "../copy/strings";
 
 export function AbstainCard({ reason }: { reason: AbstainReason }) {

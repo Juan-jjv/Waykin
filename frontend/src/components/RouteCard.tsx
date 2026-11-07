@@ -1,4 +1,4 @@
-import type { RouteOption } from "../api/tmp-types";
+import type { RouteOption } from "../api/types";
 import { formatDiff, formatExposure, formatExtra, formatMinutes } from "../copy/format";
 import { routeLabelText, strings } from "../copy/strings";
 import { ROUTE_COLORS } from "../map/colors";

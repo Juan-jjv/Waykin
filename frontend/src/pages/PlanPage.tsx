@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ApiError, TraceError } from "../api/client";
 import { useIncidents, useMeta, usePlanRoutes } from "../api/hooks";
-import type { DemoPreset, LatLon, RadiusM, RouteOption } from "../api/tmp-types";
+import type { DemoPreset, LatLon, RadiusM, RouteOption } from "../api/types";
 import { CategoryFilter } from "../components/CategoryFilter";
 import { IncidentLayer, IncidentToggle } from "../components/IncidentLayer";
 import { MapView } from "../components/MapView";
@@ -19,18 +19,18 @@ export function PlanPage() {
   const meta = metaQuery.data;
   const [origin, setOrigin] = useState<LatLon | null>(null);
   const [destination, setDestination] = useState<LatLon | null>(null);
-  const [radius, setRadius] = useState<RadiusM | null>(null);
+  const [radius, setRadius] = useState<number | null>(null);
   const [categories, setCategories] = useState<string[] | null>(null);
   const [incidentsOn, setIncidentsOn] = useState(true);
   const [presetId, setPresetId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [routeToken, setRouteToken] = useState(0);
-  const [focus, setFocus] = useState<{ token: number; geometry: [number, number][] } | null>(null);
+  const [focus, setFocus] = useState<{ token: number; geometry: number[][] } | null>(null);
   const [segmentRouteId, setSegmentRouteId] = useState<string | null>(null);
   const [walkNote, setWalkNote] = useState<string | null>(null);
   const plan = usePlanRoutes();
 
-  const activeRadius: RadiusM = radius ?? meta?.default_radius_m ?? 100;
+  const activeRadius = radius ?? meta?.default_radius_m ?? 100;
   const activeCategories = categories ?? meta?.categories ?? [];
   const incidents = useIncidents(activeRadius, activeCategories, Boolean(meta) && incidentsOn);
 
@@ -83,7 +83,7 @@ export function PlanPage() {
     setFocus(null);
     setSegmentRouteId(null);
     plan.mutate(
-      { origin, destination, radius_m: activeRadius },
+      { origin, destination, radius_m: activeRadius as RadiusM },
       {
         onSuccess: (data) => {
           const fastest = data.routes.find((route) => route.label === "fastest");

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Provenance } from "../api/tmp-types";
+import type { Provenance } from "../api/types";
 import { formatAsOf } from "../copy/format";
 import { strings } from "../copy/strings";
 

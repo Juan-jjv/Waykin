@@ -1,4 +1,3 @@
-import type { RadiusM } from "../api/tmp-types";
 import { strings } from "../copy/strings";
 
 export function RadiusSelect({
@@ -6,9 +5,9 @@ export function RadiusSelect({
   value,
   onChange,
 }: {
-  radii: RadiusM[];
-  value: RadiusM;
-  onChange: (next: RadiusM) => void;
+  radii: number[];
+  value: number;
+  onChange: (next: number) => void;
 }) {
   return (
     <section>

@@ -1,4 +1,5 @@
-import type { AbstainReason, RouteLabel } from "../api/tmp-types";
+// ALL user-facing text lives here, so the banned-word lint has one place to watch.
+import type { AbstainReason, RouteLabel } from "../api/types";
 
 export const routeLabelText: Record<RouteLabel, string> = {
   fastest: "Fastest",
@@ -67,6 +68,10 @@ export const strings = {
   holdsIn: (draws: number, n: number) => `Holds in ${draws} of ${n} simulations`,
   incidentCount: (count: number) => `${count} reported incidents`,
   asOf: (date: string) => `as of ${date}`,
+  walkPlaceholder: "Walker screen arrives in Phase 3.",
+  familyPlaceholder: "Family screen arrives in Phase 3.",
+  journey: (id: string | undefined) => `Journey ${id}`,
+  backToPlan: "Back to plan",
   messages: {
     recommendLower:
       "Lower-exposure has fewer reported incidents in most simulations, and the extra walk stays within the time limit.",

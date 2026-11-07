@@ -17,7 +17,7 @@ export function removeMapSource(map: MapLibreMap, sourceId: string, layerIds: st
   if (map.getSource(sourceId)) map.removeSource(sourceId);
 }
 
-export function toLngLatLine(geometry: [number, number][]): [number, number][] {
+export function toLngLatLine(geometry: number[][]): [number, number][] {
   return geometry.map(([lat, lon]) => [lon, lat]);
 }
 

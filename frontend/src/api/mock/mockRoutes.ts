@@ -1,20 +1,18 @@
 import metaJson from "./fixtures/meta.json";
 import { traceWalkingRoutes, type TracedRoute } from "./streetRoute";
 import type {
-  BBox,
   Decision,
   Interval,
   LatLon,
   Meta,
   Provenance,
-  RadiusM,
   RouteLabel,
   RouteOption,
   RoutesRequest,
   RoutesResponse,
   TopSegment,
-} from "./tmp-types";
-import { abstainCopy, strings } from "../copy/strings";
+} from "../types";
+import { abstainCopy, strings } from "../../copy/strings";
 
 const meta = metaJson as Meta;
 const ABSTAIN_PRESET_ID = "overlap";
@@ -73,7 +71,7 @@ function snapped(point: [number, number] | undefined, fallback: LatLon): LatLon 
   return { lat: point[0], lon: point[1] };
 }
 
-function makeDecision(routes: RouteOption[], radius: RadiusM, overlapPreset: boolean): Decision {
+function makeDecision(routes: RouteOption[], radius: number, overlapPreset: boolean): Decision {
   const fastest = routes.find((route) => route.label === "fastest");
   const balanced = routes.find((route) => route.label === "balanced");
   const lower = routes.find((route) => route.label === "lower_exposure");
@@ -148,7 +146,7 @@ function makeRoutes(
   traced: TracedRoute[],
   origin: LatLon,
   destination: LatLon,
-  radius: RadiusM,
+  radius: number,
   counts: "separated" | "overlap",
 ): RouteOption[] {
   const labels = labelsFor(traced);
@@ -189,7 +187,7 @@ function labelsFor(traced: TracedRoute[]): RouteLabel[] {
   return ["fastest", "balanced", "lower_exposure"];
 }
 
-function drawsFor(label: RouteLabel, counts: "separated" | "overlap", radius: RadiusM): number | null {
+function drawsFor(label: RouteLabel, counts: "separated" | "overlap", radius: number): number | null {
   if (label === "fastest") return null;
   if (counts === "overlap") return label === "balanced" ? 214 : 188;
   if (label === "balanced") return radius === 50 ? 468 : 452;
@@ -242,7 +240,7 @@ function matchesPreset(origin: LatLon, destination: LatLon, id: string): boolean
   return haversine(origin, preset.origin) < 40 && haversine(destination, preset.destination) < 40;
 }
 
-function insideBBox(point: LatLon, bbox: BBox): boolean {
+function insideBBox(point: LatLon, bbox: number[]): boolean {
   const [west, south, east, north] = bbox;
   return point.lon >= west && point.lon <= east && point.lat >= south && point.lat <= north;
 }

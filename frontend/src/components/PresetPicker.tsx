@@ -1,4 +1,4 @@
-import type { DemoPreset } from "../api/tmp-types";
+import type { DemoPreset } from "../api/types";
 import { strings } from "../copy/strings";
 
 export function PresetPicker({

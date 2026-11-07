@@ -1,126 +1,51 @@
-import incidentsJson from "./fixtures/incidents.json";
-import metaJson from "./fixtures/meta.json";
-import { buildMockRoutes } from "./mockRoutes";
-
-export { TraceError } from "./streetRoute";
 import type {
-  ErrorBody,
-  ErrorCode,
-  IncidentPoint,
-  IncidentsResponse,
-  Meta,
-  RadiusM,
-  RoutesRequest,
-  RoutesResponse,
-} from "./tmp-types";
+  ErrorCode, HazardList, IncidentsResponse, JourneyCreated, Meta, RerouteRequest, RoutesRequest, RoutesResponse,
+} from "./types";
 
-const useMock = import.meta.env.VITE_USE_MOCK !== "0";
-const metaFixture = metaJson as Meta;
-const incidentPoints = incidentsJson.points as IncidentPoint[];
-
-const ERROR_CODES = new Set<ErrorCode>([
-  "outside_area",
-  "no_path",
-  "invalid_token",
-  "expired",
-  "not_found",
-  "rate_limited",
-  "forbidden",
-  "validation",
-]);
+export { TraceError } from "./mock/streetRoute";
 
 export class ApiError extends Error {
-  readonly code: ErrorCode;
-
-  constructor(code: ErrorCode, message: string) {
+  constructor(public status: number, public code: ErrorCode | "network", message: string) {
     super(message);
-    this.name = "ApiError";
-    this.code = code;
   }
 }
 
-export async function getMeta(): Promise<Meta> {
-  if (useMock) return clone(metaFixture);
-  const response = await fetch("/api/meta");
-  if (!response.ok) throw await readError(response);
-  return (await response.json()) as Meta;
-}
+const USE_MOCK = import.meta.env.VITE_USE_MOCK === "1";
+const mock = () => import("./mock").then((m) => m.mockApi);
 
-export async function getIncidents(radiusM: RadiusM, categories: string[]): Promise<IncidentsResponse> {
-  if (useMock) {
-    const meta = clone(metaFixture);
-    return {
-      provenance: { ...meta.provenance, radius_m: radiusM },
-      points: filterPoints(incidentPoints, categories),
-    };
-  }
-  const params = new URLSearchParams({ radius_m: String(radiusM) });
-  for (const category of categories) params.append("category", category);
-  const response = await fetch(`/api/incidents?${params.toString()}`);
-  if (!response.ok) throw await readError(response);
-  return (await response.json()) as IncidentsResponse;
-}
-
-export async function planRoutes(request: RoutesRequest): Promise<RoutesResponse> {
-  if (useMock) {
-    try {
-      return await buildMockRoutes(request);
-    } catch (error) {
-      if (isCoded(error) && error.code === "outside_area") {
-        throw new ApiError("outside_area", "outside_area");
-      }
-      if (isCoded(error) && error.code === "no_path") {
-        throw new ApiError("no_path", "no_path");
-      }
-      throw error;
-    }
-  }
-  const response = await fetch("/api/routes", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(request),
-  });
-  if (!response.ok) throw await readError(response);
-  return (await response.json()) as RoutesResponse;
-}
-
-function filterPoints(points: IncidentPoint[], categories: string[]): IncidentPoint[] {
-  return points.flatMap((point) => {
-    const byCategory: Record<string, number> = {};
-    let count = 0;
-    for (const category of categories) {
-      const value = point.by_category[category] ?? 0;
-      if (value > 0) {
-        byCategory[category] = value;
-        count += value;
-      }
-    }
-    if (count <= 0) return [];
-    return [{ ...point, count, by_category: byCategory }];
-  });
-}
-
-async function readError(response: Response): Promise<ApiError> {
+async function call<T>(path: string, init?: RequestInit): Promise<T> {
+  let res: Response;
   try {
-    const body = (await response.json()) as Partial<ErrorBody>;
-    const code = body.error?.code;
-    const message = body.error?.message ?? "Request failed";
-    if (code && ERROR_CODES.has(code)) return new ApiError(code, message);
+    res = await fetch(`/api${path}`, {
+      ...init,
+      headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+    });
   } catch {
-    /* Response was not the error model. */
+    throw new ApiError(0, "network", "Can't reach the WayKin server");
   }
-  return new ApiError("validation", "Request failed");
+  if (res.status === 204) return undefined as T;
+  const body = await res.json().catch(() => null);
+  if (!res.ok) {
+    const err = body?.error;
+    throw new ApiError(res.status, err?.code ?? "validation", err?.message ?? `HTTP ${res.status}`);
+  }
+  return body as T;
 }
 
-function isCoded(error: unknown): error is { code: "outside_area" | "no_path" } {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error.code === "outside_area" || error.code === "no_path")
-  );
-}
-
-function clone<T>(value: T): T {
-  return JSON.parse(JSON.stringify(value)) as T;
-}
+export const api = {
+  meta: () => (USE_MOCK ? mock().then((m) => m.meta()) : call<Meta>("/meta")),
+  incidents: (radius_m: number, categories: string[]) => {
+    if (USE_MOCK) return mock().then((m) => m.incidents(radius_m, categories));
+    const q = new URLSearchParams({ radius_m: String(radius_m) });
+    categories.forEach((c) => q.append("category", c));
+    return call<IncidentsResponse>(`/incidents?${q}`);
+  },
+  routes: (req: RoutesRequest) =>
+    USE_MOCK ? mock().then((m) => m.routes(req)) : call<RoutesResponse>("/routes", { method: "POST", body: JSON.stringify(req) }),
+  reroute: (req: RerouteRequest) => call<RoutesResponse>("/routes/reroute", { method: "POST", body: JSON.stringify(req) }),
+  createJourney: (expires_in_min?: number) =>
+    call<JourneyCreated>("/journeys", { method: "POST", body: JSON.stringify(expires_in_min ? { expires_in_min } : {}) }),
+  endJourney: (id: string, walkerToken: string) =>
+    call<void>(`/journeys/${encodeURIComponent(id)}`, { method: "DELETE", headers: { Authorization: `Bearer ${walkerToken}` } }),
+  hazards: () => call<HazardList>("/hazards"),
+};

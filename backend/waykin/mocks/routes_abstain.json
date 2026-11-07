@@ -1,0 +1,258 @@
+{
+ "provenance": {
+  "source": "synthetic",
+  "source_label": "Synthetic data (mock mode)",
+  "as_of": "2026-10-31",
+  "window_days": 90,
+  "radius_m": 100,
+  "units": "reported incidents attributed to segments along this route, last 90 days",
+  "disclaimer": "Counts of reported incidents near street segments, from public police data. They describe the past, not what will happen on your walk. Not for comparing neighbourhoods."
+ },
+ "origin_snapped": {
+  "lat": 53.51686,
+  "lon": -113.522093
+ },
+ "destination_snapped": {
+  "lat": 53.523304,
+  "lon": -113.514932
+ },
+ "routes": [
+  {
+   "route_id": "0fa9bc0122",
+   "label": "fastest",
+   "minutes": 15.0,
+   "extra_minutes": 0.0,
+   "distance_m": 1200.0,
+   "exposure": {
+    "p10": 5.2,
+    "p50": 7.0,
+    "p90": 9.1,
+    "mean": 7.1
+   },
+   "exposure_diff_vs_fastest": null,
+   "draws_better": null,
+   "geometry": [
+    [
+     53.51686,
+     -113.522093
+    ],
+    [
+     53.516891,
+     -113.520587
+    ],
+    [
+     53.516923,
+     -113.51908
+    ],
+    [
+     53.516955,
+     -113.517573
+    ],
+    [
+     53.516987,
+     -113.516067
+    ],
+    [
+     53.517018,
+     -113.51456
+    ],
+    [
+     53.517916,
+     -113.514613
+    ],
+    [
+     53.518814,
+     -113.514666
+    ],
+    [
+     53.519712,
+     -113.51472
+    ],
+    [
+     53.52061,
+     -113.514773
+    ],
+    [
+     53.521508,
+     -113.514826
+    ],
+    [
+     53.522406,
+     -113.514879
+    ],
+    [
+     53.523304,
+     -113.514932
+    ]
+   ],
+   "edge_ids": [
+    50,
+    52,
+    54,
+    56,
+    58,
+    61,
+    84,
+    107,
+    130,
+    153,
+    176,
+    199
+   ],
+   "top_segments": [
+    {
+     "edge_id": 84,
+     "name": "Test St 8",
+     "attributed": 1.4,
+     "geometry": [
+      [
+       53.517916,
+       -113.514613
+      ],
+      [
+       53.518814,
+       -113.514666
+      ]
+     ]
+    },
+    {
+     "edge_id": 52,
+     "name": "Test Ave 3",
+     "attributed": 1.4,
+     "geometry": [
+      [
+       53.516891,
+       -113.520587
+      ],
+      [
+       53.516923,
+       -113.51908
+      ]
+     ]
+    }
+   ],
+   "explanation": "Fastest option, 15 min. About 7.0 reported incidents."
+  },
+  {
+   "route_id": "8025d3f809",
+   "label": "balanced",
+   "minutes": 15.0,
+   "extra_minutes": 0.0,
+   "distance_m": 1200.0,
+   "exposure": {
+    "p10": 4.6,
+    "p50": 6.5,
+    "p90": 8.8,
+    "mean": 6.63
+   },
+   "exposure_diff_vs_fastest": {
+    "p10": -2.4,
+    "p50": -0.5,
+    "p90": 1.6,
+    "mean": -0.43
+   },
+   "draws_better": 212,
+   "geometry": [
+    [
+     53.51686,
+     -113.522093
+    ],
+    [
+     53.517758,
+     -113.522147
+    ],
+    [
+     53.518656,
+     -113.5222
+    ],
+    [
+     53.519554,
+     -113.522254
+    ],
+    [
+     53.520452,
+     -113.522307
+    ],
+    [
+     53.52135,
+     -113.52236
+    ],
+    [
+     53.522248,
+     -113.522414
+    ],
+    [
+     53.523146,
+     -113.522467
+    ],
+    [
+     53.523177,
+     -113.52096
+    ],
+    [
+     53.523209,
+     -113.519453
+    ],
+    [
+     53.523241,
+     -113.517946
+    ],
+    [
+     53.523273,
+     -113.516439
+    ],
+    [
+     53.523304,
+     -113.514932
+    ]
+   ],
+   "edge_ids": [
+    51,
+    74,
+    97,
+    120,
+    143,
+    166,
+    189,
+    211,
+    213,
+    215,
+    217,
+    219
+   ],
+   "top_segments": [
+    {
+     "edge_id": 120,
+     "name": "Test St 3",
+     "attributed": 1.3,
+     "geometry": [
+      [
+       53.519554,
+       -113.522254
+      ],
+      [
+       53.520452,
+       -113.522307
+      ]
+     ]
+    }
+   ],
+   "explanation": "+0 min vs fastest. About 0.5 fewer reported incidents attributed to segments along this route (90 days)."
+  }
+ ],
+ "decision": {
+  "status": "abstain",
+  "recommended_route_id": null,
+  "reason": "indistinguishable",
+  "message": "The routes' reported-incident counts overlap too much to call one lower.",
+  "radius_sensitive": null,
+  "radius_decisions": null,
+  "thresholds": {
+   "min_reduction": 0.15,
+   "min_draw_share": 0.9,
+   "max_extra_time": 0.25
+  },
+  "n_draws": 500
+ },
+ "blocked_edge_count": 0
+}

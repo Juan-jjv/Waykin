@@ -1,10 +1,16 @@
-import { Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { FamilyPage } from "./pages/FamilyPage";
 import { PlanPage } from "./pages/PlanPage";
+import { WalkPage } from "./pages/WalkPage";
 
-export function App() {
+export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<PlanPage />} />
-    </Routes>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<PlanPage />} />
+        <Route path="/walk/:id" element={<WalkPage />} />
+        <Route path="/f/:id" element={<FamilyPage />} />
+      </Routes>
+    </BrowserRouter>
   );
 }

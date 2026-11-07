@@ -1,4 +1,4 @@
-import type { RouteLabel } from "../api/tmp-types";
+import type { RouteLabel } from "../api/types";
 
 export const ROUTE_COLORS: Record<RouteLabel, string> = {
   fastest: "#64748b",

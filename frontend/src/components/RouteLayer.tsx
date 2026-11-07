@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { MapLayerMouseEvent, Map as MapLibreMap } from "maplibre-gl";
 import type { FeatureCollection } from "geojson";
-import type { RouteOption } from "../api/tmp-types";
+import type { RouteOption } from "../api/types";
 import { useWaykinMap } from "../map/context";
 import { fitPadding } from "../map/fitPadding";
 import { removeMapSource, setGeoJson, toLngLatLine, whenStyleReady } from "../map/geojson";
@@ -165,7 +165,7 @@ export function FitRoutes({ token, routes }: { token: number; routes: RouteOptio
 export function SegmentFocus({
   focus,
 }: {
-  focus: { token: number; geometry: [number, number][] } | null;
+  focus: { token: number; geometry: number[][] } | null;
 }) {
   const map = useWaykinMap();
 
@@ -177,7 +177,7 @@ export function SegmentFocus({
   return null;
 }
 
-function fitLatLon(map: MapLibreMap, points: [number, number][], maxZoom: number): void {
+function fitLatLon(map: MapLibreMap, points: number[][], maxZoom: number): void {
   let west = Infinity;
   let south = Infinity;
   let east = -Infinity;

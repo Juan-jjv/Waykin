@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import { Map as MapLibreMap, Marker, type MapMouseEvent } from "maplibre-gl";
-import type { LatLon } from "../api/tmp-types";
+import type { LatLon } from "../api/types";
 import { formatCoord } from "../copy/format";
 import { strings } from "../copy/strings";
 import { useWaykinMap } from "../map/context";

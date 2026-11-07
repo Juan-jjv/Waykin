@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Popup, type MapLayerMouseEvent } from "maplibre-gl";
 import type { FeatureCollection } from "geojson";
-import type { IncidentPoint } from "../api/tmp-types";
+import type { IncidentPoint } from "../api/types";
 import { strings } from "../copy/strings";
 import { useWaykinMap } from "../map/context";
 import { removeMapSource, setGeoJson, whenStyleReady } from "../map/geojson";

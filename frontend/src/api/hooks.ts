@@ -1,25 +1,10 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { getIncidents, getMeta, planRoutes } from "./client";
-import type { RadiusM, RoutesRequest } from "./tmp-types";
+import { api } from "./client";
+import type { RoutesRequest } from "./types";
 
-export function useMeta() {
-  return useQuery({
-    queryKey: ["meta"],
-    queryFn: getMeta,
-    retry: false,
-  });
-}
+export const useMeta = () => useQuery({ queryKey: ["meta"], queryFn: api.meta, staleTime: Infinity, retry: 1 });
 
-export function useIncidents(radiusM: RadiusM, categories: string[], enabled: boolean) {
-  return useQuery({
-    queryKey: ["incidents", radiusM, categories],
-    queryFn: () => getIncidents(radiusM, categories),
-    enabled,
-  });
-}
+export const useIncidents = (radius_m: number, categories: string[], enabled: boolean) =>
+  useQuery({ queryKey: ["incidents", radius_m, categories], queryFn: () => api.incidents(radius_m, categories), enabled });
 
-export function usePlanRoutes() {
-  return useMutation({
-    mutationFn: (request: RoutesRequest) => planRoutes(request),
-  });
-}
+export const usePlanRoutes = () => useMutation({ mutationFn: (req: RoutesRequest) => api.routes(req) });

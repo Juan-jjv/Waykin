@@ -1,4 +1,4 @@
-import type { LatLon } from "./tmp-types";
+import type { LatLon } from "../types";
 
 const ROUTER = "https://router.project-osrm.org/route/v1/foot";
 const OFFSETS_M = [150, -190, 280, -340, 460, -520];

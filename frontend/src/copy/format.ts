@@ -1,4 +1,4 @@
-import type { AbstainReason, Interval, RouteLabel } from "../api/tmp-types";
+import type { AbstainReason, Interval, RouteLabel } from "../api/types";
 import { abstainCopy, routeLabelText } from "./strings";
 
 export function formatAsOf(iso: string): string {
