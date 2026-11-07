@@ -21,7 +21,8 @@ abstract class RelayBase {
   protected closedByUs = false;
   protected statusCb: ((s: RelayStatus) => void) | undefined;
 
-  constructor(protected journeyId: string, private token: string, private role: "walker" | "viewer") {}
+  constructor(protected journeyId: string, private token: string, private role: "walker" | "viewer",
+              private label?: string) {}
 
   protected setStatus(s: RelayStatus) {
     this.statusCb?.(s);
@@ -32,7 +33,9 @@ abstract class RelayBase {
     this.setStatus("connecting");
     const ws = new WebSocket(relayUrl(this.journeyId));
     this.ws = ws;
-    ws.onopen = () => ws.send(JSON.stringify({ type: "auth", role: this.role, token: this.token }));
+    ws.onopen = () => ws.send(JSON.stringify({
+      type: "auth", role: this.role, token: this.token, ...(this.label ? { label: this.label } : {}),
+    }));
     ws.onmessage = (ev) => {
       const msg = JSON.parse(ev.data as string);
       if (msg.type === "ready") {
@@ -100,7 +103,17 @@ export class RelayWalker extends RelayBase {
     this.shut();
   }
 
-  protected onMessage(): void {}
+  private viewersCb: ((n: number, joinedLabel: string | null | undefined, joined: boolean) => void) | undefined;
+
+  /** Viewer count changes. `joinedLabel` is set when someone starts viewing: their name, or null for a link viewer. */
+  onViewers(cb: (n: number, joinedLabel: string | null | undefined, joined: boolean) => void): void {
+    this.viewersCb = cb;
+  }
+
+  protected onMessage(msg: { type: string; [k: string]: unknown }): void {
+    if (msg.type === "viewers" || msg.type === "viewer_left") this.viewersCb?.(Number(msg.count), undefined, false);
+    if (msg.type === "viewer_joined") this.viewersCb?.(Number(msg.count), (msg.label as string | null) ?? null, true);
+  }
 }
 
 export class RelayViewer extends RelayBase {
@@ -109,17 +122,20 @@ export class RelayViewer extends RelayBase {
   private mode: RelayMode;
   private onUpdate: (u: WalkerUpdate) => void;
   private onEnded: (r: string) => void;
+  private onSilent?: (seconds: number) => void;
 
   constructor(o: {
     journeyId: string; viewerToken: string; key?: CryptoKey; relayMode: RelayMode;
     onUpdate: (u: WalkerUpdate) => void; onEnded: (r: string) => void; onStatus?: (s: RelayStatus) => void;
+    label?: string; onSilent?: (seconds: number) => void;
   }) {
-    super(o.journeyId, o.viewerToken, "viewer");
+    super(o.journeyId, o.viewerToken, "viewer", o.label);
     this.key = o.key;
     this.mode = o.relayMode;
     this.onUpdate = o.onUpdate;
     this.onEnded = o.onEnded;
     this.statusCb = o.onStatus;
+    this.onSilent = o.onSilent;
   }
 
   close(): void {
@@ -129,6 +145,10 @@ export class RelayViewer extends RelayBase {
   protected onMessage(msg: { type: string; [k: string]: unknown }): void {
     if (msg.type === "ended") {
       this.onEnded(String(msg.reason));
+      return;
+    }
+    if (msg.type === "walker_silent") {
+      this.onSilent?.(Number(msg.silent_s));
       return;
     }
     if (msg.type !== "loc") return;

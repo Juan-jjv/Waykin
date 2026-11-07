@@ -19,6 +19,16 @@ export type HazardList = S["HazardList"];
 export type DemoPreset = S["DemoPreset"];
 export type Interval = S["Interval"];
 export type TopSegment = S["TopSegment"];
+export type AccountOut = S["AccountOut"];
+export type FamilySummary = S["FamilySummary"];
+export type FamilyDetail = S["FamilyDetail"];
+export type FamilyMember = S["FamilyMember"];
+export type FamilyJourney = S["FamilyJourneyOut"];
+export type InviteCreated = S["InviteCreated"];
+export type InvitePreview = S["InvitePreview"];
+export type FamilyEvent = S["FamilyEvent"];
+export type WalkerUpdate = S["WalkerUpdate"];
+export type AlertKind = S["AlertRef"]["kind"];
 export type ErrorCode =
   | "outside_area" | "no_path" | "invalid_token" | "expired" | "not_found" | "rate_limited" | "forbidden" | "validation";
 export type AbstainReason = NonNullable<Decision["reason"]>;
