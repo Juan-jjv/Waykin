@@ -1,0 +1,7 @@
+# PROVISIONAL (Phase 1). C2 confirms this list against the real EPS category names at H13
+# and maps them in eps_columns.yaml. Never guess EPS field names.
+categories: [assault, robbery, break_and_enter, theft_from_vehicle, theft]
+presets:
+  all: [assault, robbery, break_and_enter, theft_from_vehicle, theft]
+  person_directed: [assault, robbery]   # offences with a person as the direct victim; confirm against EPS
+active_preset: all                       # C2 decides at H13

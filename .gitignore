@@ -1,0 +1,25 @@
+# Data: EPS data and build artifacts are never committed
+data/raw/
+data/build/
+*.npy
+*.npz
+*.parquet
+*.csv
+*.xlsx
+*.geojson
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+frontend/dist/
+
+# Env and editors
+.env
+.DS_Store
