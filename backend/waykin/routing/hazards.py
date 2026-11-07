@@ -1,21 +1,19 @@
-"""Map point hazards to graph edges and place deterministic demo hazards."""
+"""Convert point hazards into blocked graph edges and place demo points."""
 
 from __future__ import annotations
 
 from collections.abc import Sequence
 
 import numpy as np
-from pyproj import Transformer
 from shapely.geometry import Point
 
-from .types import Graph
+from .graph import Graph, utm_to_latlon
 
 
 def hazard_edges(graph: Graph, lat: float, lon: float, radius_m: float) -> np.ndarray:
-    """Find edges intersecting a metric-radius hazard; return sorted edge ids."""
     if not np.isfinite([lat, lon, radius_m]).all() or radius_m < 0:
         raise ValueError("hazard coordinate and radius must be finite; radius must be non-negative")
-    x, y = graph.metric_transformer.transform(float(lon), float(lat))
+    x, y = graph.to_utm(float(lat), float(lon))
     point = Point(x, y)
     affected = np.asarray(graph.edge_tree.query(point.buffer(float(radius_m)), predicate="intersects"), dtype=np.int32)
     if affected.size == 0 and graph.n_edges:
@@ -26,7 +24,7 @@ def hazard_edges(graph: Graph, lat: float, lon: float, radius_m: float) -> np.nd
 
 
 def point_along_route(graph: Graph, edge_ids: Sequence[int], fraction: float) -> tuple[float, float]:
-    """Return ``(lat, lon)`` at a fraction of total route length."""
+    """Return the WGS84 (lat, lon) point at a fraction of the route length."""
     edges = np.asarray(edge_ids, dtype=np.int32)
     if not edges.size:
         raise ValueError("cannot place a point on an empty route")
@@ -37,38 +35,36 @@ def point_along_route(graph: Graph, edge_ids: Sequence[int], fraction: float) ->
     total = float(lengths.sum())
     if total <= 0:
         raise ValueError("route has no measurable length")
-    # Infer the traversal direction of each undirected edge from its neighbor.
+
     if edges.size > 1:
-        first_u, first_v = int(graph.edge_u[edges[0]]), int(graph.edge_v[edges[0]])
-        second_ends = {int(graph.edge_u[edges[1]]), int(graph.edge_v[edges[1]])}
-        shared = second_ends.intersection({first_u, first_v})
-        current = first_v if first_u in shared else first_u
+        u0, v0 = int(graph.edge_u[edges[0]]), int(graph.edge_v[edges[0]])
+        next_ends = {int(graph.edge_u[edges[1]]), int(graph.edge_v[edges[1]])}
+        shared = next_ends.intersection({u0, v0})
+        current = v0 if u0 in shared else u0
     else:
         current = int(graph.edge_u[edges[0]])
-    forward: list[bool] = []
+    forwards: list[bool] = []
     for edge_id in edges:
         u, v = int(graph.edge_u[edge_id]), int(graph.edge_v[edge_id])
         if current == u:
-            forward.append(True)
+            forwards.append(True)
             current = v
         elif current == v:
-            forward.append(False)
+            forwards.append(False)
             current = u
         else:
             raise ValueError("edge ids do not form a contiguous route")
 
     remaining = total * fraction
-    selected_index = len(edges) - 1
+    idx = len(edges) - 1
     distance = float(lengths[-1])
-    for index, length in enumerate(lengths):
+    for i, length in enumerate(lengths):
         if remaining <= length:
-            selected_index, distance = index, remaining
+            idx, distance = i, remaining
             break
         remaining -= float(length)
-    selected = int(edges[selected_index])
-    if not forward[selected_index]:
-        distance = float(lengths[selected_index]) - distance
-    point = graph.edge_geom_utm[selected].interpolate(distance)
-    inverse = Transformer.from_crs(graph.metric_transformer.target_crs, "EPSG:4326", always_xy=True)
-    lon, lat = inverse.transform(point.x, point.y)
+    if not forwards[idx]:
+        distance = float(lengths[idx]) - distance
+    point = graph.edge_geom_utm[int(edges[idx])].interpolate(distance)
+    lat, lon = utm_to_latlon(point.x, point.y)
     return float(lat), float(lon)

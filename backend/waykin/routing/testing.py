@@ -1,68 +1,44 @@
-"""Deterministic, network-free graph fixtures shared by backend agents."""
-
+"""Test helpers used by every agent's tests. No network access."""
 from __future__ import annotations
 
 from pathlib import Path
 
 import numpy as np
-from pyproj import Transformer
-from shapely.geometry import LineString
+import shapely
 
-from .build import CRS_METRIC, graph_from_records, save_graph
-from .types import Graph
+from waykin.routing.graph import Graph, assemble_graph, latlon_to_utm, utm_to_latlon, write_artifacts
 
 
-def make_grid_graph(
-    n: int = 6,
-    spacing_m: float = 100.0,
-    sw_latlon: tuple[float, float] = (53.52, -113.50),
-) -> Graph:
-    """Build an ``n`` by ``n`` connected grid around a southwest lat/lon."""
-    if n < 2:
-        raise ValueError("n must be at least 2")
-    if not np.isfinite(spacing_m) or spacing_m <= 0:
-        raise ValueError("spacing_m must be positive and finite")
-    sw_lat, sw_lon = map(float, sw_latlon)
-    forward = Transformer.from_crs("EPSG:4326", CRS_METRIC, always_xy=True)
-    inverse = Transformer.from_crs(CRS_METRIC, "EPSG:4326", always_xy=True)
-    x0, y0 = forward.transform(sw_lon, sw_lat)
-    node_x = np.asarray([x0 + col * spacing_m for row in range(n) for col in range(n)], dtype=np.float64)
-    node_y = np.asarray([y0 + row * spacing_m for row in range(n) for col in range(n)], dtype=np.float64)
-    lon, lat = inverse.transform(node_x, node_y)
-    node_latlon = np.column_stack((lat, lon))
-    edge_u: list[int] = []
-    edge_v: list[int] = []
-    lengths: list[float] = []
-    names: list[str] = []
-    geometries: list[LineString] = []
-    coords_latlon: list[np.ndarray] = []
-    for row in range(n):
-        for col in range(n):
-            u = row * n + col
-            for nr, nc, name in ((row, col + 1, f"Test Ave {row + 1}"), (row + 1, col, f"Test St {col + 1}")):
-                if nr >= n or nc >= n:
-                    continue
-                v = nr * n + nc
-                edge_u.append(u)
-                edge_v.append(v)
-                lengths.append(float(spacing_m))
-                names.append(name)
-                geom = LineString([(node_x[u], node_y[u]), (node_x[v], node_y[v])])
-                geometries.append(geom)
-                glon, glat = inverse.transform(*np.asarray(geom.coords).T)
-                coords_latlon.append(np.column_stack((glat, glon)))
-    # A small padded bbox keeps fixture snaps valid while matching the production API.
-    min_lat, max_lat = float(node_latlon[:, 0].min()), float(node_latlon[:, 0].max())
-    min_lon, max_lon = float(node_latlon[:, 1].min()), float(node_latlon[:, 1].max())
-    pad_lat = spacing_m * 2 / 111_000
-    pad_lon = spacing_m * 2 / max(111_000 * np.cos(np.deg2rad(sw_lat)), 1)
-    return graph_from_records(
-        node_x, node_y, node_latlon, np.asarray(edge_u), np.asarray(edge_v),
-        np.asarray(lengths), tuple(names), tuple(geometries), tuple(coords_latlon),
-        (min_lon - pad_lon, min_lat - pad_lat, max_lon + pad_lon, max_lat + pad_lat),
-    )
+def make_grid_graph(n: int = 12, spacing_m: float = 100.0, sw_latlon=(53.515, -113.525)) -> Graph:
+    """An n×n grid of streets `spacing_m` apart, south-west corner at `sw_latlon`.
+
+    Rows are "Test Ave 1..n" (west-east), columns are "Test St 1..n" (south-north).
+    Node id = row * n + col.
+    """
+    x0, y0 = latlon_to_utm(*sw_latlon)
+    cols, rows = np.meshgrid(np.arange(n), np.arange(n))
+    node_x = (x0 + cols.ravel() * spacing_m).astype(float)
+    node_y = (y0 + rows.ravel() * spacing_m).astype(float)
+    node_lat, node_lon = utm_to_latlon(node_x, node_y)
+    node_lat, node_lon = np.asarray(node_lat), np.asarray(node_lon)
+
+    u, v, names = [], [], []
+    for r in range(n):
+        for c in range(n):
+            a = r * n + c
+            if c + 1 < n:
+                u.append(a), v.append(a + 1), names.append(f"Test Ave {r + 1}")
+            if r + 1 < n:
+                u.append(a), v.append(a + n), names.append(f"Test St {c + 1}")
+    u, v = np.array(u, dtype=np.int32), np.array(v, dtype=np.int32)
+    geoms = shapely.linestrings(np.stack([np.column_stack([node_x[u], node_y[u]]),
+                                          np.column_stack([node_x[v], node_y[v]])], axis=1))
+    coords = [np.array([[node_lat[a], node_lon[a]], [node_lat[b], node_lon[b]]]) for a, b in zip(u, v)]
+    lengths = np.full(len(u), float(spacing_m))
+    bbox = (float(node_lon.min()), float(node_lat.min()), float(node_lon.max()), float(node_lat.max()))
+    return assemble_graph(node_lat, node_lon, node_x, node_y, u, v, lengths, names, geoms, coords, bbox=bbox)
 
 
-def write_graph_artifacts(graph: Graph, graph_dir: str | Path) -> dict[str, object]:
-    """Write fixture artifacts in exactly the production graph format."""
-    return save_graph(graph, graph_dir)
+def write_graph_artifacts(graph: Graph, out_dir: Path) -> None:
+    """Write the same files as the real build, so other build scripts can run in CI."""
+    write_artifacts(graph, out_dir, {"built_at": "test", "osmnx_version": None})

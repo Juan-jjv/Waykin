@@ -1,29 +1,21 @@
-"""Build the precomputed OSM walking graph used by WayKin."""
-
-from __future__ import annotations
-
+"""Build the demo-area walking graph: python -m scripts.routing.build_graph [--bbox w,s,e,n] [--out DIR]"""
 import argparse
-import time
+import os
+from pathlib import Path
 
-from waykin.routing.build import DEMO_BBOX, build_osm_graph, save_graph
-
-
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--bbox", nargs=4, type=float, metavar=("WEST", "SOUTH", "EAST", "NORTH"), default=DEMO_BBOX)
-    parser.add_argument("--output", default="data/build/graph", help="graph artifact directory")
-    parser.add_argument("--cache", default="data/build/graph/osm_cache", help="OSMnx cache directory")
-    return parser.parse_args()
+from waykin import constants as C
+from waykin.routing.build import build
 
 
 def main() -> None:
-    args = parse_args()
-    started = time.perf_counter()
-    graph = build_osm_graph(tuple(args.bbox), cache_dir=args.cache)
-    manifest = save_graph(graph, args.output)
-    elapsed = time.perf_counter() - started
-    print(f"Built graph: {graph.n_nodes:,} nodes, {graph.n_edges:,} edges in {elapsed:.1f}s")
-    print(f"Artifacts: {args.output} (sha256 {manifest['graph_hash']})")
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument("--bbox", help="west,south,east,north (defaults to DEMO_BBOX)")
+    p.add_argument("--out", default=str(Path(os.getenv("DATA_DIR", "../data")) / "build" / "graph"))
+    a = p.parse_args()
+    bbox = tuple(float(x) for x in a.bbox.split(",")) if a.bbox else C.DEMO_BBOX
+    stats = build(Path(a.out), bbox)
+    print(f"graph built: {stats['n_nodes']} nodes, {stats['n_edges']} edges, "
+          f"hash {stats['graph_hash']}, {stats['seconds']} s -> {a.out}")
 
 
 if __name__ == "__main__":

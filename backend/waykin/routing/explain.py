@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from typing import Any
 
 import numpy as np
 
-from .types import Graph
+from .graph import Graph
 
 
 def route_geometry(graph: Graph, node_ids: Sequence[int], edge_ids: Sequence[int]) -> list[list[float]]:
@@ -29,7 +29,7 @@ def route_geometry(graph: Graph, node_ids: Sequence[int], edge_ids: Sequence[int
         result.extend([[float(lat), float(lon)] for lat, lon in points])
     if not edges.size:
         node = int(nodes[0])
-        return [[float(graph.node_latlon[node, 0]), float(graph.node_latlon[node, 1])]]
+        return [[float(graph.node_lat[node]), float(graph.node_lon[node])]]
     return result
 
 
@@ -86,7 +86,7 @@ def top_segments(
         edge_id = int(edge_id)
         if edge_id not in selected:
             continue
-        name = graph.edge_names[edge_id]
+        name = graph.edge_name[edge_id]
         idx = position[edge_id]
         coords = np.asarray(graph.edge_coords_latlon[edge_id], dtype=np.float64)
         if traversal[idx][0] == int(graph.edge_v[edge_id]):
@@ -103,19 +103,15 @@ def top_segments(
     return groups[:k]
 
 
-def _value(stats: Any, key: str, default: float = 0.0) -> float:
-    if isinstance(stats, Mapping):
-        return float(stats.get(key, default))
-    return float(getattr(stats, key, default))
+def explanation_text(label: str, minutes: float, extra_min: float, diff_p50: float | None, p50: float) -> str:
+    """Build the API's short explanation without safety claims."""
+    import math
+    from waykin import constants as C
 
-
-def explanation_text(option_label: str, extra_min: float, stats: Any) -> str:
-    """Build an explanation without safety claims or neighborhood judgments."""
-    p50 = _value(stats, "p50")
-    diff_p50 = _value(stats, "diff_p50")
-    if option_label.lower() == "fastest":
-        return f"Fastest option, {max(0.0, _value(stats, 'minutes', extra_min)):.1f} min. About {p50:.1f} reported incidents attributed to segments along this route (90 days)."
-    extra = max(0.0, float(extra_min))
-    if diff_p50 < 0:
-        return f"+{extra:.1f} min vs fastest. About {abs(diff_p50):.1f} fewer reported incidents attributed to segments along this route (90 days)."
-    return f"+{extra:.1f} min vs fastest. About the same number of reported incidents attributed to segments along this route (90 days)."
+    whole = lambda value: int(math.floor(float(value) + 0.5))
+    if label == "fastest":
+        return f"Fastest option, {whole(minutes)} min. About {p50:.1f} {C.UNITS_SHORT}."
+    if diff_p50 is not None and diff_p50 < 0:
+        return (f"+{whole(extra_min)} min vs fastest. About {abs(diff_p50):.1f} fewer reported incidents "
+                "attributed to segments along this route (90 days).")
+    return f"+{whole(extra_min)} min vs fastest. About the same number of reported incidents."
