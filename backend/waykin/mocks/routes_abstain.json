@@ -1,0 +1,327 @@
+{
+ "provenance": {
+  "source": "synthetic",
+  "source_label": "Mock fixtures (synthetic, for development only)",
+  "as_of": "2026-10-31",
+  "window_days": 90,
+  "radius_m": 100,
+  "units": "reported incidents attributed to segments along this route, last 90 days",
+  "disclaimer": "Counts of reported incidents near street segments, from public police data. They describe the past, not what will happen on your walk. Not for comparing neighbourhoods."
+ },
+ "origin_snapped": {
+  "lat": 53.52,
+  "lon": -113.52
+ },
+ "destination_snapped": {
+  "lat": 53.52,
+  "lon": -113.5
+ },
+ "blocked_edge_count": 0,
+ "routes": [
+  {
+   "route_id": "cc577ab177",
+   "label": "fastest",
+   "minutes": 16.55,
+   "extra_minutes": 0.0,
+   "distance_m": 1323.7,
+   "exposure": {
+    "p10": 9.8,
+    "p50": 12.0,
+    "p90": 14.9,
+    "mean": 12.2
+   },
+   "exposure_diff_vs_fastest": null,
+   "draws_better": null,
+   "geometry": [
+    [
+     53.52,
+     -113.52
+    ],
+    [
+     53.52,
+     -113.518462
+    ],
+    [
+     53.52,
+     -113.516923
+    ],
+    [
+     53.52,
+     -113.515385
+    ],
+    [
+     53.52,
+     -113.513846
+    ],
+    [
+     53.52,
+     -113.512308
+    ],
+    [
+     53.52,
+     -113.510769
+    ],
+    [
+     53.52,
+     -113.509231
+    ],
+    [
+     53.52,
+     -113.507692
+    ],
+    [
+     53.52,
+     -113.506154
+    ],
+    [
+     53.52,
+     -113.504615
+    ],
+    [
+     53.52,
+     -113.503077
+    ],
+    [
+     53.52,
+     -113.501538
+    ],
+    [
+     53.52,
+     -113.5
+    ]
+   ],
+   "edge_ids": [
+    1000,
+    1001,
+    1002,
+    1003,
+    1004,
+    1005,
+    1006,
+    1007,
+    1008,
+    1009,
+    1010,
+    1011,
+    1012
+   ],
+   "top_segments": [
+    {
+     "edge_id": 1002,
+     "name": "Saskatchewan Dr NW",
+     "attributed": 2.52,
+     "geometry": [
+      [
+       53.52,
+       -113.516923
+      ],
+      [
+       53.52,
+       -113.515385
+      ]
+     ]
+    },
+    {
+     "edge_id": 1003,
+     "name": "109 St NW",
+     "attributed": 1.68,
+     "geometry": [
+      [
+       53.52,
+       -113.515385
+      ],
+      [
+       53.52,
+       -113.513846
+      ]
+     ]
+    },
+    {
+     "edge_id": 1004,
+     "name": "82 Ave NW",
+     "attributed": 1.08,
+     "geometry": [
+      [
+       53.52,
+       -113.513846
+      ],
+      [
+       53.52,
+       -113.512308
+      ]
+     ]
+    }
+   ],
+   "explanation": "Shortest walking time. Passes segments with a median of 14.1 reported incidents attributed, last 90 days."
+  },
+  {
+   "route_id": "b5c8e5fb59",
+   "label": "balanced",
+   "minutes": 19.05,
+   "extra_minutes": 2.5,
+   "distance_m": 1524.1,
+   "exposure": {
+    "p10": 8.6,
+    "p50": 11.1,
+    "p90": 14.0,
+    "mean": 11.2
+   },
+   "exposure_diff_vs_fastest": {
+    "p10": -3.0,
+    "p50": -0.9,
+    "p90": 1.4,
+    "mean": -1.0
+   },
+   "draws_better": 118,
+   "geometry": [
+    [
+     53.52,
+     -113.52
+    ],
+    [
+     53.5209,
+     -113.52
+    ],
+    [
+     53.5209,
+     -113.518462
+    ],
+    [
+     53.5209,
+     -113.516923
+    ],
+    [
+     53.5209,
+     -113.515385
+    ],
+    [
+     53.5209,
+     -113.513846
+    ],
+    [
+     53.5209,
+     -113.512308
+    ],
+    [
+     53.5209,
+     -113.510769
+    ],
+    [
+     53.5209,
+     -113.509231
+    ],
+    [
+     53.5209,
+     -113.507692
+    ],
+    [
+     53.5209,
+     -113.506154
+    ],
+    [
+     53.5209,
+     -113.504615
+    ],
+    [
+     53.5209,
+     -113.503077
+    ],
+    [
+     53.5209,
+     -113.501538
+    ],
+    [
+     53.5209,
+     -113.5
+    ],
+    [
+     53.52,
+     -113.5
+    ]
+   ],
+   "edge_ids": [
+    2000,
+    2001,
+    2002,
+    2003,
+    2004,
+    2005,
+    2006,
+    2007,
+    2008,
+    2009,
+    2010,
+    2011,
+    2012,
+    2013,
+    2014
+   ],
+   "top_segments": [
+    {
+     "edge_id": 2002,
+     "name": "Saskatchewan Dr NW",
+     "attributed": 2.33,
+     "geometry": [
+      [
+       53.5209,
+       -113.518462
+      ],
+      [
+       53.5209,
+       -113.516923
+      ]
+     ]
+    },
+    {
+     "edge_id": 2003,
+     "name": "109 St NW",
+     "attributed": 1.55,
+     "geometry": [
+      [
+       53.5209,
+       -113.516923
+      ],
+      [
+       53.5209,
+       -113.515385
+      ]
+     ]
+    },
+    {
+     "edge_id": 2004,
+     "name": "82 Ave NW",
+     "attributed": 1.0,
+     "geometry": [
+      [
+       53.5209,
+       -113.515385
+      ],
+      [
+       53.5209,
+       -113.513846
+      ]
+     ]
+    }
+   ],
+   "explanation": "2.5 extra minutes. About the same number of reported incidents attributed as the fastest route."
+  }
+ ],
+ "decision": {
+  "status": "abstain",
+  "recommended_route_id": null,
+  "reason": "indistinguishable",
+  "message": "The data can't tell these routes apart: the alternative has at least 15% fewer reported incidents attributed in only 118 of 500 simulations. Take whichever route you prefer.",
+  "radius_sensitive": false,
+  "radius_decisions": {
+   "50": "abstain:indistinguishable",
+   "100": "abstain:indistinguishable",
+   "200": "abstain:indistinguishable"
+  },
+  "thresholds": {
+   "min_reduction": 0.15,
+   "min_draw_share": 0.9,
+   "max_extra_time": 0.25
+  },
+  "n_draws": 500
+ }
+}

@@ -1,0 +1,212 @@
+{
+ "provenance": {
+  "source": "synthetic",
+  "source_label": "Mock fixtures (synthetic, for development only)",
+  "as_of": "2026-10-31",
+  "window_days": 90,
+  "radius_m": 100,
+  "units": "reported incidents attributed to segments along this route, last 90 days",
+  "disclaimer": "Counts of reported incidents near street segments, from public police data. They describe the past, not what will happen on your walk. Not for comparing neighbourhoods."
+ },
+ "points": [
+  {
+   "location_id": "mock-0-0",
+   "lat": 53.5191,
+   "lon": -113.52,
+   "count": 2,
+   "by_category": {
+    "property": 1,
+    "disorder": 1
+   }
+  },
+  {
+   "location_id": "mock-0-2",
+   "lat": 53.5191,
+   "lon": -113.512,
+   "count": 10,
+   "by_category": {
+    "violent": 3,
+    "property": 2,
+    "disorder": 5
+   }
+  },
+  {
+   "location_id": "mock-1-0",
+   "lat": 53.52,
+   "lon": -113.52,
+   "count": 4,
+   "by_category": {
+    "violent": 1,
+    "property": 1,
+    "disorder": 2
+   }
+  },
+  {
+   "location_id": "mock-1-1",
+   "lat": 53.52,
+   "lon": -113.516,
+   "count": 7,
+   "by_category": {
+    "violent": 2,
+    "property": 5
+   }
+  },
+  {
+   "location_id": "mock-1-2",
+   "lat": 53.52,
+   "lon": -113.512,
+   "count": 15,
+   "by_category": {
+    "violent": 6,
+    "property": 5,
+    "disorder": 4
+   }
+  },
+  {
+   "location_id": "mock-1-4",
+   "lat": 53.52,
+   "lon": -113.504,
+   "count": 15,
+   "by_category": {
+    "violent": 4,
+    "property": 6,
+    "disorder": 5
+   }
+  },
+  {
+   "location_id": "mock-1-5",
+   "lat": 53.52,
+   "lon": -113.5,
+   "count": 10,
+   "by_category": {
+    "violent": 4,
+    "property": 1,
+    "disorder": 5
+   }
+  },
+  {
+   "location_id": "mock-2-0",
+   "lat": 53.5209,
+   "lon": -113.52,
+   "count": 7,
+   "by_category": {
+    "property": 2,
+    "disorder": 5
+   }
+  },
+  {
+   "location_id": "mock-2-1",
+   "lat": 53.5209,
+   "lon": -113.516,
+   "count": 8,
+   "by_category": {
+    "violent": 3,
+    "property": 5
+   }
+  },
+  {
+   "location_id": "mock-2-3",
+   "lat": 53.5209,
+   "lon": -113.508,
+   "count": 6,
+   "by_category": {
+    "property": 4,
+    "disorder": 2
+   }
+  },
+  {
+   "location_id": "mock-2-4",
+   "lat": 53.5209,
+   "lon": -113.504,
+   "count": 11,
+   "by_category": {
+    "violent": 5,
+    "property": 3,
+    "disorder": 3
+   }
+  },
+  {
+   "location_id": "mock-2-5",
+   "lat": 53.5209,
+   "lon": -113.5,
+   "count": 9,
+   "by_category": {
+    "violent": 1,
+    "property": 2,
+    "disorder": 6
+   }
+  },
+  {
+   "location_id": "mock-3-2",
+   "lat": 53.5218,
+   "lon": -113.512,
+   "count": 9,
+   "by_category": {
+    "violent": 4,
+    "disorder": 5
+   }
+  },
+  {
+   "location_id": "mock-3-4",
+   "lat": 53.5218,
+   "lon": -113.504,
+   "count": 6,
+   "by_category": {
+    "violent": 3,
+    "disorder": 3
+   }
+  },
+  {
+   "location_id": "mock-3-5",
+   "lat": 53.5218,
+   "lon": -113.5,
+   "count": 7,
+   "by_category": {
+    "violent": 4,
+    "disorder": 3
+   }
+  },
+  {
+   "location_id": "mock-4-1",
+   "lat": 53.5227,
+   "lon": -113.516,
+   "count": 5,
+   "by_category": {
+    "violent": 4,
+    "disorder": 1
+   }
+  },
+  {
+   "location_id": "mock-4-3",
+   "lat": 53.5227,
+   "lon": -113.508,
+   "count": 5,
+   "by_category": {
+    "violent": 2,
+    "disorder": 3
+   }
+  },
+  {
+   "location_id": "mock-4-4",
+   "lat": 53.5227,
+   "lon": -113.504,
+   "count": 9,
+   "by_category": {
+    "violent": 2,
+    "property": 5,
+    "disorder": 2
+   }
+  },
+  {
+   "location_id": "mock-4-5",
+   "lat": 53.5227,
+   "lon": -113.5,
+   "count": 6,
+   "by_category": {
+    "violent": 2,
+    "property": 2,
+    "disorder": 2
+   }
+  }
+ ]
+}

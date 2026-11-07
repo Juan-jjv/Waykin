@@ -1,0 +1,27 @@
+[
+  {
+    "id": "recommend",
+    "name": "Campus to Old Strathcona",
+    "description": "WayKin recommends a lower-exposure alternative. Placeholder coordinates: re-pick at H24 once real routes work.",
+    "origin": {"lat": 53.5232, "lon": -113.5263},
+    "destination": {"lat": 53.5185, "lon": -113.4950},
+    "expected": "recommend"
+  },
+  {
+    "id": "abstain",
+    "name": "Short hop near campus",
+    "description": "The data can't tell the routes apart, so WayKin abstains. Placeholder coordinates: re-pick at H24.",
+    "origin": {"lat": 53.5205, "lon": -113.5180},
+    "destination": {"lat": 53.5160, "lon": -113.5120},
+    "expected": "abstain"
+  },
+  {
+    "id": "reroute",
+    "name": "Closure on the way",
+    "description": "A scripted closure lands on the walker's route and the client reroutes. Hazard coordinates come from A3's pick_demo_hazards.py.",
+    "origin": {"lat": 53.5155, "lon": -113.5300},
+    "destination": {"lat": 53.5195, "lon": -113.4990},
+    "expected": "reroute",
+    "hazard": {"lat": 53.5175, "lon": -113.5140, "radius_m": 40, "description": "Closure: utility works on the sidewalk"}
+  }
+]

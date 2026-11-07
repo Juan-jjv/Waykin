@@ -1,0 +1,12 @@
+{
+ "hazard_id": "hz_mock_closure",
+ "kind": "closure",
+ "lat": 53.52,
+ "lon": -113.51,
+ "radius_m": 40,
+ "ttl_min": 10,
+ "description": "Mock closure: sidewalk works",
+ "edge_ids": [
+  1006
+ ]
+}

@@ -1,0 +1,39 @@
+{
+ "api_version": "1",
+ "provenance": {
+  "source": "synthetic",
+  "source_label": "Mock fixtures (synthetic, for development only)",
+  "as_of": "2026-10-31",
+  "window_days": 90,
+  "radius_m": 100,
+  "units": "reported incidents attributed to segments along this route, last 90 days",
+  "disclaimer": "Counts of reported incidents near street segments, from public police data. They describe the past, not what will happen on your walk. Not for comparing neighbourhoods."
+ },
+ "radii": [
+  50,
+  100,
+  200
+ ],
+ "default_radius_m": 100,
+ "bbox": [
+  -113.535,
+  53.51,
+  -113.48,
+  53.53
+ ],
+ "categories": [
+  "violent",
+  "property",
+  "disorder"
+ ],
+ "category_preset": "mock",
+ "relay_mode": "e2ee",
+ "n_draws": 500,
+ "thresholds": {
+  "min_reduction": 0.15,
+  "min_draw_share": 0.9,
+  "max_extra_time": 0.25
+ },
+ "demo_mode": false,
+ "demo_presets": []
+}
