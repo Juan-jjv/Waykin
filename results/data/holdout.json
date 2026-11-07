@@ -1,0 +1,13 @@
+{
+  "n_trips": 200,
+  "n_trips_skipped": 0,
+  "n_recommend": 18,
+  "radius_m": 100,
+  "train_days": 60,
+  "test_days": 30,
+  "mean_reports_recommended": 1.96,
+  "mean_reports_fastest": 6.056,
+  "n_recommended_not_higher": 18,
+  "source": "eps",
+  "graph_hash": "d8bee732510541af"
+}
