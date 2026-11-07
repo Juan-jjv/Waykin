@@ -98,7 +98,8 @@ def top_segments(
             groups[-1]["attributed"] += float(values[edge_id])
             groups[-1]["geometry"] = _join_coords(groups[-1]["geometry"], coords_list)
         else:
-            groups.append({"edge_id": edge_id, "edge_ids": [edge_id], "name": name, "attributed": float(values[edge_id]), "geometry": coords_list})
+            groups.append({"edge_id": edge_id, "edge_ids": [edge_id], "name": name,
+                           "attributed": float(values[edge_id]), "geometry": coords_list})
     groups.sort(key=lambda item: (-item["attributed"], item["edge_id"]))
     return groups[:k]
 
@@ -108,7 +109,9 @@ def explanation_text(label: str, minutes: float, extra_min: float, diff_p50: flo
     import math
     from waykin import constants as C
 
-    whole = lambda value: int(math.floor(float(value) + 0.5))
+    def whole(value: float) -> int:
+        return int(math.floor(float(value) + 0.5))
+
     if label == "fastest":
         return f"Fastest option, {whole(minutes)} min. About {p50:.1f} {C.UNITS_SHORT}."
     if diff_p50 is not None and diff_p50 < 0:

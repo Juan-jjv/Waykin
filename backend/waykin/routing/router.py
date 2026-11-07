@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-
 import numpy as np
 import scipy.sparse as sp
 from scipy.sparse.csgraph import dijkstra
