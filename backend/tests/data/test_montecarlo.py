@@ -1,4 +1,7 @@
+import time
+
 import numpy as np
+import pytest
 import scipy.sparse as sp
 
 from waykin.data.bundle import make_synthetic_bundle_for_tests
@@ -40,6 +43,17 @@ def test_unreported_street_is_uncertain_not_zero():
     X = simulate(A, c, n_draws=500)
     assert X[4].std() > 0 and X[4].mean() > 0
     assert X[4].mean() < X[2].mean()  # but still much lower than a reported street
+
+
+@pytest.mark.timing
+def test_simulate_runtime_at_full_size():
+    rng = np.random.default_rng(0)
+    L, E, per_row = 6_000, 25_000, 6
+    cols = rng.integers(0, E, (L, per_row)).ravel()
+    A = sp.csr_matrix((np.full(L * per_row, 1 / per_row), (np.repeat(np.arange(L), per_row), cols)), shape=(L, E))
+    t = time.perf_counter()
+    simulate(A, rng.poisson(1.0, L).astype(float))
+    assert time.perf_counter() - t < 60
 
 
 def test_synthetic_bundle_is_deterministic(grid):

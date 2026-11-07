@@ -1,0 +1,38 @@
+# How to read the EPS snapshot in data/raw/eps/ (spec A2.3). Filled in from the real export's headers.
+# Every column NOT named here (Intersection, Occurrence_Category, Occurrence_Group, OBJECTID) is dropped right
+# after reading. Coordinates come from the GeoJSON point geometry, converted from the CRS the file declares.
+
+columns:
+  lat: null          # null: read from the GeoJSON point geometry
+  lon: null
+  category: Occurrence_Type_Group
+  date: Date_Reported      # a reported date, not when the event took place
+  count: null        # one row = one report
+
+# For a file that stores a point as "POINT (lon lat)" in one column. Not used by the GeoJSON export.
+point_wkt: null
+
+# EPS type -> canonical category from categories.yaml. Anything not listed is dropped. C2 reviews this list.
+# Left out because the location says little about the street: fraud, internet and counterfeit types; recovered
+# and abandoned vehicles; possession of stolen property; suspicious person or vehicle reports; traffic offences;
+# liquor, health-act and drug types; arson and property damage; explosives and hazardous-goods types.
+category_map:
+  "Assault": assault
+  "Robbery Personal": robbery
+  "Robbery Commercial": robbery
+  "Homicide": homicide
+  "Indecent Act": indecent_act
+  "Weapons Complaint": weapons
+  "Weapons Complaint Firearm": weapons
+  "Break and Enter Residential": break_and_enter
+  "Break and Enter Commercial": break_and_enter
+  "Theft Under $5000": theft
+  "Theft Over $5000": theft
+  "Theft of Motor Vehicle": vehicle_theft
+  "Mischief - Property": mischief
+  "Graffiti": mischief
+  "Dispute": disorder
+  "Disturbance": disorder
+  "Trouble with Person": disorder
+  "Trespassing": disorder
+  "Intoxicated Person": disorder

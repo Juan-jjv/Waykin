@@ -1,7 +1,9 @@
-# PROVISIONAL (Phase 1). C2 confirms this list against the real EPS category names at H13
-# and maps them in eps_columns.yaml. Never guess EPS field names.
-categories: [assault, robbery, break_and_enter, theft_from_vehicle, theft]
+# Canonical incident categories (spec A2.3), based on the real EPS occurrence types.
+# eps_columns.yaml maps EPS names onto these. C2 reviews both.
+categories: [assault, robbery, homicide, indecent_act, weapons, break_and_enter, theft, vehicle_theft, mischief, disorder]
 presets:
-  all: [assault, robbery, break_and_enter, theft_from_vehicle, theft]
-  person_directed: [assault, robbery]   # offences with a person as the direct victim; confirm against EPS
-active_preset: all                       # C2 decides at H13
+  all: [assault, robbery, homicide, indecent_act, weapons, break_and_enter, theft, vehicle_theft, mischief, disorder]
+  person_directed: [assault, robbery, homicide, indecent_act]   # a person is the direct victim
+active_preset: all                       # C2 decides. Only the active preset is built; changing it means rebuilding.
+# Fixed split of each synthetic count across the categories above, in the same order. Synthetic data only.
+synthetic_weights: [0.12, 0.03, 0.01, 0.01, 0.03, 0.10, 0.35, 0.05, 0.15, 0.15]

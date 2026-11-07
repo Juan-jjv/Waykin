@@ -1,4 +1,4 @@
-"""ExposureBundle (spec B4) and the in-memory synthetic bundle every agent's tests use."""
+"""ExposureBundle (spec B4), loading built artifacts, and the in-memory synthetic bundle every agent's tests use."""
 from __future__ import annotations
 
 import json
@@ -9,15 +9,6 @@ from typing import Literal
 
 import numpy as np
 import pandas as pd
-import scipy.sparse as sp
-
-from waykin import constants as C
-from waykin.data.montecarlo import simulate
-
-SYNTHETIC_LABEL = "Synthetic data (demo)"
-SYNTHETIC_AS_OF = date(2026, 10, 31)
-TEST_CATEGORIES = ["assault", "robbery", "break_and_enter", "theft_from_vehicle", "theft"]
-_TEST_CATEGORY_PROBS = np.array([0.15, 0.05, 0.2, 0.3, 0.3])
 
 
 @dataclass
@@ -36,52 +27,37 @@ class ExposureBundle:
 
 
 def load_exposure(build_dir: Path, source: str, radii: list[int], expected_graph_hash: str) -> ExposureBundle:
-    raise NotImplementedError("load_exposure arrives in Phase 2 (H21); use make_synthetic_bundle_for_tests")
-
-
-def _incident_edge_allocation(graph, node_ids: np.ndarray) -> sp.csr_matrix:
-    """Crude allocation for tests only: each node's count is split equally over the edges touching it.
-    The real build uses allocation.build_allocation (length inside a radius)."""
-    rows, cols = [], []
-    for i, n in enumerate(node_ids):
-        touching = np.flatnonzero((graph.edge_u == n) | (graph.edge_v == n))
-        rows.extend([i] * len(touching))
-        cols.extend(touching.tolist())
-    rows, cols = np.array(rows), np.array(cols)
-    deg = np.bincount(rows, minlength=len(node_ids))
-    A = sp.csr_matrix((1.0 / deg[rows], (rows, cols)), shape=(len(node_ids), graph.n_edges))
-    return A
+    """Load `build_dir/<source>/`, written by scripts.data.build_exposure. X is memory-mapped."""
+    d = Path(build_dir) / source
+    manifest_path = d / "manifest.json"
+    if not manifest_path.exists():
+        raise FileNotFoundError(f"no exposure build for '{source}': run python -m scripts.data.build_exposure --source {source}")
+    m = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if m["graph_hash"] != expected_graph_hash:
+        raise RuntimeError("exposure built for a different graph; rerun build_exposure")
+    radii = [int(r) for r in radii]
+    absent = [r for r in radii if r not in m["radii"]]
+    if absent:
+        raise RuntimeError(f"radii {absent} not built (built: {m['radii']}); rerun build_exposure with --radii")
+    return ExposureBundle(
+        source=m["source"], source_label=m["source_label"], as_of=date.fromisoformat(m["as_of"]),
+        window_days=int(m["window_days"]), category_preset=m["category_preset"], categories=list(m["categories"]),
+        radii=radii,
+        X={r: np.load(d / f"X_r{r}.npy", mmap_mode="r") for r in radii},
+        mean={r: np.load(d / f"mean_r{r}.npy") for r in radii},
+        observed={r: np.load(d / f"observed_r{r}.npy") for r in radii},
+        locations=pd.read_parquet(d / "locations.parquet"),
+    )
 
 
 def make_synthetic_bundle_for_tests(graph, radii=(100,)) -> ExposureBundle:
-    """In-memory, deterministic, no files. A few Gaussian hotspots over graph nodes, Poisson counts."""
-    rng = np.random.default_rng([C.SEED, 1])
-    n_hot = 3
-    hot = rng.choice(graph.n_nodes, size=n_hot, replace=False)
-    sigma = rng.uniform(150, 300, n_hot)
-    amp = rng.uniform(2, 8, n_hot)
-    d2 = (graph.node_x[:, None] - graph.node_x[hot][None, :]) ** 2 + (graph.node_y[:, None] - graph.node_y[hot][None, :]) ** 2
-    rate = 0.05 + (amp[None, :] * np.exp(-d2 / (2 * sigma[None, :] ** 2))).sum(1)
-    counts_all = rng.poisson(rate)
+    """In-memory, deterministic, no files: the real pipeline on any Graph."""
+    from waykin.data.pipeline import make_bundle, pivot_locations
+    from waykin.data.sources.base import category_config
+    from waykin.data.sources.synthetic import SYNTHETIC_AS_OF, SYNTHETIC_LABEL, SyntheticSource
 
-    published = np.flatnonzero(counts_all >= 1)
-    prior = np.flatnonzero(counts_all == 0)  # on the test grid every other node is > PRIOR_NODE_MIN_GAP_M away
-    by_cat = [rng.multinomial(int(c), _TEST_CATEGORY_PROBS) for c in counts_all[published]]
-    locations = pd.DataFrame({
-        "location_id": [f"syn-{n}" for n in published],
-        "lat": graph.node_lat[published], "lon": graph.node_lon[published],
-        "count": counts_all[published].astype(int),
-        "counts_by_category": [json.dumps({k: int(v) for k, v in zip(TEST_CATEGORIES, bc) if v}) for bc in by_cat],
-    })
-
-    rows = np.concatenate([published, prior])
-    counts = np.concatenate([counts_all[published], np.zeros(len(prior))]).astype(float)
-    A = _incident_edge_allocation(graph, rows)
-    X, mean, observed = {}, {}, {}
-    for r in radii:
-        X[r] = simulate(A, counts, radius_m=int(r))
-        mean[r] = X[r].mean(axis=1)
-        observed[r] = np.asarray(A.T @ counts, dtype=np.float32)
-    return ExposureBundle(source="synthetic", source_label=SYNTHETIC_LABEL, as_of=SYNTHETIC_AS_OF,
-                          window_days=C.WINDOW_DAYS, category_preset="all", categories=list(TEST_CATEGORIES),
-                          radii=[int(r) for r in radii], X=X, mean=mean, observed=observed, locations=locations)
+    cfg = category_config()
+    bbox = (float(graph.node_lon.min()), float(graph.node_lat.min()), float(graph.node_lon.max()), float(graph.node_lat.max()))
+    locations = pivot_locations(SyntheticSource(Path("."), graph=graph).load(bbox, cfg.active))
+    return make_bundle(locations, graph, radii, source="synthetic", source_label=SYNTHETIC_LABEL, as_of=SYNTHETIC_AS_OF,
+                       category_preset=cfg.active_preset, categories=cfg.categories)

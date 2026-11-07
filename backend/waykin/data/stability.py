@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from typing import Literal
 
 import numpy as np
-import scipy.sparse as sp
 
 from waykin import constants as C
 
@@ -82,17 +81,15 @@ def _routes(cs) -> list:
     return [cs.fastest] + list(cs.alternatives) + ([cs.uncapped] if cs.uncapped is not None else [])
 
 
-def _route_matrix(routes, n_edges: int) -> sp.csr_matrix:
-    rows = np.concatenate([np.full(len(r.edge_ids), i) for i, r in enumerate(routes)])
-    cols = np.concatenate([np.asarray(r.edge_ids, dtype=np.int64) for r in routes])
-    return sp.csr_matrix((np.ones(len(cols)), (rows, cols)), shape=(len(routes), n_edges))
+def _route_sums(routes, X) -> np.ndarray:
+    """S = R @ X, shape (n_routes, N). Sums only each route's rows: a sparse product would first convert all
+    of float32 X to float64, which is several times over the time budget at full size."""
+    return np.stack([X[np.asarray(r.edge_ids)].sum(axis=0, dtype=np.float64) for r in routes])
 
 
 def _assess_one(cs, bundle, radius_m: int):
     routes = _routes(cs)
-    X = bundle.X[radius_m]
-    R = _route_matrix(routes, X.shape[0])
-    S = np.asarray(R @ X, dtype=np.float64)
+    S = _route_sums(routes, bundle.X[radius_m])
     union = np.unique(np.concatenate([np.asarray(r.edge_ids) for r in routes]))
     observed_total = float(np.asarray(bundle.observed[radius_m])[union].sum())
     minutes = np.array([r.minutes for r in routes])
@@ -128,10 +125,11 @@ def assess(cs, bundle, radius_m: int, *, check_radii: bool = True) -> Assessment
 
     radius_decisions, radius_sensitive = None, None
     if check_radii and len(bundle.radii) > 1:
-        radius_decisions = {}
+        radius_decisions = {int(radius_m): _label_of(status, reason, idx, routes)}
         for r in bundle.radii:
-            rr, _, st, rs, ix, _ = _assess_one(cs, bundle, r)
-            radius_decisions[int(r)] = _label_of(st, rs, ix, rr)
+            if r != radius_m:
+                rr, _, st, rs, ix, _ = _assess_one(cs, bundle, r)
+                radius_decisions[int(r)] = _label_of(st, rs, ix, rr)
         radius_sensitive = len(set(radius_decisions.values())) > 1
 
     return Assessment(status=status, recommended_route_id=rec_id, reason=reason, message=message, stats=stats,
