@@ -37,7 +37,7 @@ jobs:
         run: |
           cd backend && WAYKIN_MOCK=1 uvicorn waykin.main:app --port 8000 & sleep 5
           cd frontend && npm run gen:types
-          git diff --exit-code frontend/src/api/types.gen.ts
+          git diff --exit-code -- src/api/types.gen.ts
 
   no-data:
     runs-on: ubuntu-latest
