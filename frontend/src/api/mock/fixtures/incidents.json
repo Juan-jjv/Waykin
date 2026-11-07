@@ -1,0 +1,74 @@
+{
+  "points": [
+    {
+      "location_id": "n1",
+      "lat": 53.5252,
+      "lon": -113.5268,
+      "count": 16,
+      "by_category": { "Person-directed": 16 }
+    },
+    {
+      "location_id": "n2",
+      "lat": 53.5234,
+      "lon": -113.521,
+      "count": 9,
+      "by_category": { "Person-directed": 6, "Property": 3 }
+    },
+    {
+      "location_id": "n3",
+      "lat": 53.5208,
+      "lon": -113.5155,
+      "count": 4,
+      "by_category": { "Property": 4 }
+    },
+    {
+      "location_id": "n4",
+      "lat": 53.5186,
+      "lon": -113.5088,
+      "count": 9,
+      "by_category": { "Property": 9 }
+    },
+    {
+      "location_id": "n5",
+      "lat": 53.5174,
+      "lon": -113.5024,
+      "count": 1,
+      "by_category": { "Traffic": 1 }
+    },
+    {
+      "location_id": "n6",
+      "lat": 53.522,
+      "lon": -113.5302,
+      "count": 4,
+      "by_category": { "Traffic": 4 }
+    },
+    {
+      "location_id": "n7",
+      "lat": 53.5142,
+      "lon": -113.5126,
+      "count": 16,
+      "by_category": { "Person-directed": 4, "Property": 8, "Traffic": 4 }
+    },
+    {
+      "location_id": "n8",
+      "lat": 53.5278,
+      "lon": -113.5104,
+      "count": 2,
+      "by_category": { "Traffic": 2 }
+    },
+    {
+      "location_id": "n9",
+      "lat": 53.5128,
+      "lon": -113.4965,
+      "count": 6,
+      "by_category": { "Property": 6 }
+    },
+    {
+      "location_id": "n10",
+      "lat": 53.5196,
+      "lon": -113.5244,
+      "count": 3,
+      "by_category": { "Person-directed": 3 }
+    }
+  ]
+}

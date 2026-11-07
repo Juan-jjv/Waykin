@@ -70,7 +70,7 @@ def test_security_headers(mock_client):
                                               "destination": {"lat": 53.52, "lon": -113.51}})
     assert r.headers["cache-control"] == "no-store"
     assert r.headers["referrer-policy"] == "no-referrer"
-    assert "https://tile.openstreetmap.org" in r.headers["content-security-policy"]
+    assert "https://tiles.openfreemap.org" in r.headers["content-security-policy"]
 
 
 def test_openapi_includes_ws_schemas(mock_client):
