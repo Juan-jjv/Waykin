@@ -11,7 +11,9 @@ _Owner: S2 (handed over by A4). One page._
 4. `make smoke` in a second terminal: every line should be PASS, including `closure -> reroute`.
 
 ## Building the whole city with EPS reports
-`data/` is gitignored, so every machine builds its own. From `backend/`, with the venv active:
+Usually you don't need this: `python -m scripts.data.snapshot restore` unpacks the committed snapshot in `data-split/`
+(see its README). Build from scratch only to refresh the data, then `python -m scripts.data.snapshot pack` and commit
+`data-split/` so everyone gets it. From `backend/`, with the venv active:
 
 1. `python -m scripts.data.fetch_eps` pulls the last year of EPS occurrences into `data/raw/eps/eps_occurrences.geojson`.
 2. Download the Alberta extract (about 340 MB) from Geofabrik into `data/raw/osm/`:

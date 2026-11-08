@@ -3,7 +3,7 @@ SHELL := /bin/bash
 export DATA_DIR ?= $(CURDIR)/data
 UVICORN := uvicorn waykin.main:app --workers 1 --no-access-log --port 8000
 
-.PHONY: install dev api web mock build-data restore-data test gen-types demo mock-demo smoke tunnel
+.PHONY: install dev api web mock build-data restore-data pack-data test gen-types demo mock-demo smoke tunnel
 
 install:            ## once, on the host laptop
 	pip install -e "backend[dev,build]"
@@ -29,9 +29,10 @@ build-data:         ## graph (needs network for OSM), then exposure (Phase 2: bu
 	else echo "build_exposure.py not written yet (Phase 2, A2)"; fi
 
 restore-data:       ## unpack the committed snapshot in data-split/ into data/ (checks the parts first)
-	cd data-split && sha256sum -c --quiet SHA256SUMS
-	cat data-split/waykin-data.tar.xz.part-* | xz -dc | tar -xf -
-	@echo "data/ restored. Start with EXPOSURE_SOURCE=eps."
+	cd backend && python -m scripts.data.snapshot restore
+
+pack-data:          ## after rebuilding data/, repack it into data-split/ (49 MB parts) to commit
+	cd backend && python -m scripts.data.snapshot pack
 
 test:
 	cd backend && pytest -q -m "not timing"
