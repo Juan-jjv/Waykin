@@ -86,9 +86,9 @@ def main():
     fastest = option("fastest", f_path, fmin, iv(9.8, 12.4, 15.1), None, None, [9, 12, 3],
                      "Fastest option, 22 min. About 12.4 reported incidents.")
     balanced = option("balanced", b_path, fmin, iv(4.9, 6.6, 8.5), iv(-7.9, -5.8, -3.6), 471, [2, 7],
-                      "+2 min vs fastest. About 5.8 fewer reported incidents attributed to segments along this route (90 days).")
+                      "+2 min vs fastest. About 5.8 fewer reported incidents attributed to segments along this route (last 30 days).")
     lower = option("lower_exposure", l_path, fmin, iv(3.1, 4.4, 6.0), iv(-10.2, -8.0, -5.9), 492, [14],
-                   "+5 min vs fastest. About 8.0 fewer reported incidents attributed to segments along this route (90 days).")
+                   "+5 min vs fastest. About 8.0 fewer reported incidents attributed to segments along this route (last 30 days).")
     rec = S.RoutesResponse(
         provenance=provenance(), origin_snapped=ll(f_path[0]), destination_snapped=ll(f_path[-1]),
         routes=[fastest, balanced, lower],

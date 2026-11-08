@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     CITY_FEED: bool = False
     ALLOW_PUBLIC_EPS: bool = False
     CORS_ORIGINS: str = "http://localhost:5173"
+    DEMO_PASSWORD: str = "waykin-demo"  # for the demo account and family DEMO_MODE creates (waykin/demo/people.json)
     ACCOUNTS_DB: str = ""            # SQLite path for accounts and families; empty = DATA_DIR/app.sqlite, ":memory:" in mock mode
 
     @property

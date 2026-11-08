@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { NavBar } from "../components/NavBar";
 import { ApiError, TraceError } from "../api/client";
@@ -8,11 +8,13 @@ import type { DemoPreset, LatLon, RouteOption } from "../api/types";
 import { IncidentLayer } from "../components/IncidentLayer";
 import { MapFilters } from "../components/MapFilters";
 import { MapView } from "../components/MapView";
+import { PeoplePins } from "../components/PeoplePins";
 import { PointMarkers, PointSearch } from "../components/PointPicker";
 import { PresetPicker } from "../components/PresetPicker";
 import { FitRoutes, RouteLayer, SegmentFocus } from "../components/RouteLayer";
 import { RoutePanel, RouteSkeleton } from "../components/RoutePanel";
 import { strings } from "../copy/strings";
+import { useAccount, useDemoPeople } from "../family/api";
 
 const DRAFT_KEY = "waykin:route:draft";
 
@@ -41,6 +43,10 @@ export function PlanPage() {
   const showIncidents = incidentsOn && activeCategories.length > 0;
   const incidents = useIncidents(radius, activeCategories, days, Boolean(meta) && showIncidents);
   const windowLabel = strings.dateWindows.find((window) => window.days === days)?.label ?? "";
+
+  const me = useAccount().data ?? null;
+  const demoPeople = useDemoPeople(meta?.demo_mode ? (me?.account_id ?? null) : null);
+  const people = useMemo(() => (me ? demoPeople.data?.people ?? [] : []), [me, demoPeople.data]);
 
   const bbox = meta?.bbox;
   useEffect(() => {
@@ -205,6 +211,7 @@ export function PlanPage() {
             </>
           ) : null}
           <SegmentFocus focus={focus} />
+          <PeoplePins people={people} onStart={updateOrigin} onEnd={updateDestination} />
           <PointMarkers
             origin={origin}
             destination={destination}

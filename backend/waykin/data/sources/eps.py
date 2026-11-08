@@ -3,7 +3,7 @@
 * Column names come ONLY from eps_columns.yaml, filled in from the real file's headers. Never guessed.
 * Every other column (addresses, blocks, descriptions, free text) is dropped immediately after reading.
 * Points are kept exactly as published. Never geocoded, never refined, never turned into an address.
-* The window is the 90 days ending at as_of, where as_of is the latest date in the file.
+* The window is the WINDOW_DAYS (30) days ending at as_of, where as_of is the latest date in the file.
 """
 from __future__ import annotations
 

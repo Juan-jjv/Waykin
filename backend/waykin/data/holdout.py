@@ -17,6 +17,7 @@ from waykin.data.stability import assess
 from waykin.routing import router
 from waykin.routing.types import NoPathError
 
+TRAIN_DAYS = 60
 TEST_DAYS = 30
 
 
@@ -24,10 +25,10 @@ def holdout(graph, source, bbox, categories: list[str], category_preset: str, tr
             radius_m: int = C.DEFAULT_RADIUS_M) -> dict:
     as_of = source.as_of()
     split = as_of - timedelta(days=TEST_DAYS)
-    train = pivot_locations(source.window(bbox, categories, as_of - timedelta(days=C.WINDOW_DAYS), split))
+    train = pivot_locations(source.window(bbox, categories, split - timedelta(days=TRAIN_DAYS), split))
     test = pivot_locations(source.window(bbox, categories, split, as_of))
     bundle = make_bundle(train, graph, [radius_m], source=source.name, source_label=source.label, as_of=split,
-                         category_preset=category_preset, categories=categories)
+                         category_preset=category_preset, categories=categories, window_days=TRAIN_DAYS)
     A_test, _ = build_allocation(test, graph, radius_m, category_config().severity)
     later = np.asarray(A_test.T @ row_counts(test, A_test))
 
@@ -49,7 +50,7 @@ def holdout(graph, source, bbox, categories: list[str], category_preset: str, tr
     rec, fast = np.array(recommended_reports), np.array(fastest_reports)
     return {
         "n_trips": len(trips), "n_trips_skipped": skipped, "n_recommend": n, "radius_m": int(radius_m),
-        "train_days": C.WINDOW_DAYS - TEST_DAYS, "test_days": TEST_DAYS,
+        "train_days": TRAIN_DAYS, "test_days": TEST_DAYS,
         "mean_reports_recommended": round(float(rec.mean()), 3) if n else None,
         "mean_reports_fastest": round(float(fast.mean()), 3) if n else None,
         "n_recommended_not_higher": int((rec <= fast).sum()),

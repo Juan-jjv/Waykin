@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
 from waykin.config import Settings
+from waykin.demo import people as demo_people_file
 from waykin.main import create_app
 
 
@@ -37,6 +38,37 @@ def test_demo_endpoints_404_when_demo_mode_off(mock_client):
     for path in ("/api/demo/reset", "/api/demo/trigger/mock-reroute"):
         r = mock_client.post(path)
         assert r.status_code == 404 and r.json()["error"]["code"] == "not_found"
+
+
+DEMO_LOGIN = {"login": "demo", "password": "waykin-demo"}
+
+
+def test_demo_account_sees_its_family_at_the_fixed_spots(demo_client):
+    assert demo_client.post("/api/me/session", json=DEMO_LOGIN).status_code == 200
+    people = demo_client.get("/api/me/demo-people").json()["people"]
+    fixed = demo_people_file.load()["people"]
+    assert [(p["display_name"], p["position"]) for p in people] == [(f["display_name"], f["position"]) for f in fixed]
+    fam = demo_client.get("/api/me/families").json()
+    assert [f["name"] for f in fam] == ["Demo family"] and fam[0]["n_members"] == 4
+    assert {p["family_id"] for p in people} == {fam[0]["family_id"]}
+
+
+def test_other_accounts_get_no_demo_people(demo_client):
+    r = demo_client.post("/api/me/account", json={"display_name": "Alex", "login": "alex", "password": "a" * 12})
+    assert r.status_code == 201
+    assert demo_client.get("/api/me/demo-people").json() == {"people": []}
+
+
+def test_the_shared_demo_account_cant_be_deleted_or_emptied(demo_client):
+    demo_client.post("/api/me/session", json=DEMO_LOGIN)
+    fid = demo_client.get("/api/me/families").json()[0]["family_id"]
+    member = demo_client.get("/api/me/demo-people").json()["people"][0]["account_id"]
+    assert demo_client.delete("/api/me/account").status_code == 403
+    assert demo_client.delete(f"/api/me/families/{fid}/members/{member}").status_code == 403
+
+
+def test_no_demo_account_without_demo_mode(mock_client):
+    assert mock_client.post("/api/me/session", json=DEMO_LOGIN).status_code == 401
 
 
 def test_trigger_unknown_and_no_closure(demo_client):

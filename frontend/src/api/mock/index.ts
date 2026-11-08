@@ -49,7 +49,7 @@ function filterPoints(points: IncidentPoint[], categories: string[]): IncidentPo
 function mockAgeDays(id: string): number {
   let hash = 0;
   for (const char of id) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
-  return hash % 90;
+  return hash % 30;
 }
 
 function isCoded(error: unknown): error is { code: "outside_area" | "no_path" } {

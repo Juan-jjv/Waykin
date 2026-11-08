@@ -23,6 +23,13 @@ _Owner: S2 (handed over by A4). One page._
 
 A new graph invalidates every exposure build, so after step 3 always redo step 4.
 
+## Demo account
+With `DEMO_MODE=1` the server creates (at startup, if missing) the account `demo`, password `waykin-demo`
+(override with `DEMO_PASSWORD`), and a "Demo family" with Maya, Sam and Priya at fixed, made-up spots
+(`backend/waykin/demo/people.json`). Sign in as `demo` and they appear as pins on the Plan map; tap one and choose
+Start here or End here. No other account ever gets those spots. The demo account can't delete itself or remove
+family members, since everyone trying the published demo shares it. A restart re-adds anything missing.
+
 ## Presets
 Real-mode presets live in `backend/waykin/demo/presets.json` (empty until H24, when real routes work).
 Each entry is a `DemoPreset` plus, for the `reroute` preset, a `hazard` the API never exposes:

@@ -235,6 +235,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/demo-people": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Demo People
+         * @description Fixed, made-up spots from waykin/demo/people.json, for the demo account only; everyone else gets [].
+         */
+        get: operations["demo_people_api_me_demo_people_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me/account/public-key": {
         parameters: {
             query?: never;
@@ -443,6 +463,26 @@ export interface components {
             thresholds: components["schemas"]["Thresholds"];
             /** N Draws */
             n_draws: number;
+        };
+        /** DemoPeople */
+        DemoPeople: {
+            /** People */
+            people: components["schemas"]["DemoPerson"][];
+        };
+        /**
+         * DemoPerson
+         * @description A seeded demo account at a made-up spot (waykin/demo/people.json). Never a real person's location.
+         */
+        DemoPerson: {
+            /** Account Id */
+            account_id: string;
+            /** Display Name */
+            display_name: string;
+            /** Family Id */
+            family_id: string;
+            position: components["schemas"]["LatLon"];
+            /** Near */
+            near: string | null;
         };
         /** DemoPreset */
         DemoPreset: {
@@ -1598,6 +1638,26 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    demo_people_api_me_demo_people_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoPeople"];
+                };
             };
         };
     };

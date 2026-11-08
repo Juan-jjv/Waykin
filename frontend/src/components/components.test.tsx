@@ -11,8 +11,8 @@ import { ProvenanceBanner } from "./ProvenanceBanner";
 import { RoutePanel } from "./RoutePanel";
 
 const prov: Provenance = {
-  source: "synthetic", source_label: "Synthetic data (demo)", as_of: "2026-10-31", window_days: 90, radius_m: 100,
-  units: "reported incidents attributed to segments along this route, last 90 days", disclaimer: "Counts of reported incidents.",
+  source: "synthetic", source_label: "Synthetic data (demo)", as_of: "2026-10-31", window_days: 30, radius_m: 100,
+  units: "reported incidents attributed to segments along this route, last 30 days", disclaimer: "Counts of reported incidents.",
 };
 
 function routes(status: "recommend" | "abstain", reason: RoutesResponse["decision"]["reason"] = null): RoutesResponse {
@@ -42,8 +42,8 @@ describe("components", () => {
   it("incident dots grow with the count, up to a cap, and the text states counts", () => {
     expect(incidentRadius(9)).toBeGreaterThan(incidentRadius(1));
     expect(incidentRadius(100000)).toBe(16);
-    expect(strings.incidentCount(1)).toBe("1 reported incident, last 90 days");
-    expect(strings.incidentCount(3)).toBe("3 reported incidents, last 90 days");
+    expect(strings.incidentCount(1)).toBe("1 reported incident, last 30 days");
+    expect(strings.incidentCount(3)).toBe("3 reported incidents, last 30 days");
     expect(strings.incidentCategory("break_and_enter", 2)).toBe("break and enter: 2");
   });
 

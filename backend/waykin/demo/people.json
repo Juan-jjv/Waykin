@@ -1,0 +1,27 @@
+{
+  "presenter": {"login": "demo", "display_name": "Demo presenter"},
+  "family_name": "Demo family",
+  "people": [
+    {
+      "login": "maya.demo",
+      "display_name": "Maya",
+      "position": {"lat": 53.607691, "lon": -113.383349},
+      "near": "Victoria Trail NW",
+      "public_key": "BPkP2umClZdd-vi8U2QVe0xrVLjrScP9RHGCb5nwQT-m6_C0uCVPzctcVtL1XCd1wJR6r_oQA1Cs-vqpNddUhGs"
+    },
+    {
+      "login": "sam.demo",
+      "display_name": "Sam",
+      "position": {"lat": 53.477138, "lon": -113.447473},
+      "near": "72 Street NW",
+      "public_key": "BFbkrW2dYZvJJqbbOMU230MjFN_RjFbiMI2NjZR_HLCMreiX-y8P62dP8Xu3BmcNcXjD_xZqFl15iQ_tKoTYgaU"
+    },
+    {
+      "login": "priya.demo",
+      "display_name": "Priya",
+      "position": {"lat": 53.579796, "lon": -113.482703},
+      "near": "92 Street NW",
+      "public_key": "BBhdNj5yepa6PD1bA8HZEJZUXbYSqdXkmk2_4fF1DMCmpYC2rva4g275-AWWuEKT2VitAs4tP3XmUH3sBq4KGIc"
+    }
+  ]
+}

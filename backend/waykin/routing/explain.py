@@ -116,5 +116,5 @@ def explanation_text(label: str, minutes: float, extra_min: float, diff_p50: flo
         return f"Fastest option, {whole(minutes)} min. About {p50:.1f} {C.UNITS_SHORT}."
     if diff_p50 is not None and diff_p50 < 0:
         return (f"+{whole(extra_min)} min vs fastest. About {abs(diff_p50):.1f} fewer reported incidents "
-                "attributed to segments along this route (90 days).")
+                f"attributed to segments along this route (last {C.WINDOW_DAYS} days).")
     return f"+{whole(extra_min)} min vs fastest. About the same number of reported incidents."

@@ -18,7 +18,7 @@ _CHUNK = 20_000
 
 
 def synthetic_counts(node_x: np.ndarray, node_y: np.ndarray, rng: np.random.Generator) -> np.ndarray:
-    """90-day counts per node: rate_i = 0.05 + Σ_h a_h·exp(-d²/2σ_h²), count ~ Poisson(rate)."""
+    """Window counts per node: rate_i = 0.05 + Σ_h a_h·exp(-d²/2σ_h²), count ~ Poisson(rate)."""
     area_km2 = float(np.ptp(node_x) * np.ptp(node_y)) / 1e6 if len(node_x) else 0.0
     n_hot = max(N_HOTSPOTS, round(area_km2 / KM2_PER_HOTSPOT))
     hot = rng.choice(len(node_x), size=min(n_hot, len(node_x)), replace=False)

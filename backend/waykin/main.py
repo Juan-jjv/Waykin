@@ -22,6 +22,7 @@ from waykin.accounts.store import AccountStore
 from waykin.api import demo, hazards, journeys, me, meta, routes
 from waykin.api.deps import mock
 from waykin.config import Settings
+from waykin.demo import people as demo_family
 from waykin.realtime.hazard_store import HazardStore
 from waykin.realtime.hazard_stream import HazardStreamHub
 from waykin.realtime.journeys import JourneyStore
@@ -79,6 +80,8 @@ def create_app(settings: Settings | None = None, state: AppState | None = None) 
             state.hazards.on_change = app.state.hazard_stream.publish
         st = app.state.waykin
         me.ensure_accounts(st)
+        if settings.DEMO_MODE:
+            demo_family.seed(st.accounts, settings.DEMO_PASSWORD)
         st.relay.on_end = lambda jid, reason: me.announce_end(st, jid, reason)
         if not settings.DEMO_MODE and not settings.WAYKIN_MOCK:
             log.warning("admin token for hazard posting: %s", settings.ADMIN_TOKEN)

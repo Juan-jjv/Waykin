@@ -1,4 +1,5 @@
 """Real mode on the grid graph and synthetic test bundle, using A3's Phase 1 service.plan stub."""
+from waykin import constants as C
 from waykin import schemas as S
 
 
@@ -10,6 +11,8 @@ def test_routes_through_service_plan(real_client, real_state):
     assert r.status_code == 200, r.text
     resp = S.RoutesResponse.model_validate(r.json())
     assert resp.provenance.source == "synthetic" and resp.routes[0].label == "fastest"
+    assert resp.provenance.window_days == C.WINDOW_DAYS
+    assert resp.provenance.units.endswith(f"last {C.WINDOW_DAYS} days")
 
 
 def test_outside_area_error_has_no_coordinates(real_client):
@@ -27,9 +30,9 @@ def test_meta_and_incidents_from_bundle(real_client, real_state):
 
 
 def test_incidents_date_window(real_client, real_state):
-    full = real_client.get("/api/incidents", params={"days": 90}).json()
+    full = real_client.get("/api/incidents", params={"days": C.WINDOW_DAYS}).json()
     week = real_client.get("/api/incidents", params={"days": 7, "category": "assault"}).json()
-    assert full["provenance"]["window_days"] == 90 and week["provenance"]["window_days"] == 7
+    assert full["provenance"]["window_days"] == C.WINDOW_DAYS and week["provenance"]["window_days"] == 7
     assert sum(p["count"] for p in full["points"]) == int(real_state.exposure.locations["count"].sum())
     assert 0 < sum(p["count"] for p in week["points"]) < sum(p["count"] for p in full["points"])
     assert all(set(p["by_category"]) == {"assault"} for p in week["points"])

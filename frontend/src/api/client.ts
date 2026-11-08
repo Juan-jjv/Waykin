@@ -47,5 +47,4 @@ export const api = {
     call<JourneyCreated>("/journeys", { method: "POST", body: JSON.stringify(expires_in_min ? { expires_in_min } : {}) }),
   endJourney: (id: string, walkerToken: string) =>
     call<void>(`/journeys/${encodeURIComponent(id)}`, { method: "DELETE", headers: { Authorization: `Bearer ${walkerToken}` } }),
-  hazards: () => call<HazardList>("/hazards"),
-};
+  hazards: () => call<HazardList>("/hazards"),};

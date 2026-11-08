@@ -8,6 +8,7 @@ import pytest
 import yaml
 from pyproj import Transformer
 
+from waykin import constants as C
 from waykin.data.pipeline import pivot_locations
 from waykin.data.sources.base import (DAILY_COLUMNS, DATA_PKG, SOURCE_COLUMNS, category_config, get_source,
                                       validate_source_table)
@@ -32,8 +33,8 @@ def eps_source(tmp_path, rows=None, mapping=MAPPING):
         rows = [
             ("Assault", 53.51, -113.51, AS_OF, "10 Fake Street"),
             ("Assault", 53.51, -113.51, AS_OF - timedelta(days=5), "10 Fake Street"),
-            ("Theft", 53.51, -113.51, AS_OF - timedelta(days=89), "10 Fake Street"),
-            ("Theft", 53.52, -113.52, AS_OF - timedelta(days=90), "too old"),
+            ("Theft", 53.51, -113.51, AS_OF - timedelta(days=29), "10 Fake Street"),
+            ("Theft", 53.52, -113.52, AS_OF - timedelta(days=30), "too old"),
             ("Bylaw", 53.52, -113.52, AS_OF, "not a mapped category"),
             ("Theft", 53.9, -113.52, AS_OF, "outside the box"),
         ]
@@ -151,7 +152,7 @@ def test_eps_daily_splits_the_same_reports_by_day(tmp_path):
     daily = src.daily(BBOX, None)
     assert list(daily.columns) == DAILY_COLUMNS and "Fake" not in daily.to_csv()
     assert daily["count"].sum() == src.load(BBOX, None)["count"].sum()
-    assert set(daily["date"]) == {AS_OF, AS_OF - timedelta(days=5), AS_OF - timedelta(days=89)}
+    assert set(daily["date"]) == {AS_OF, AS_OF - timedelta(days=5), AS_OF - timedelta(days=29)}
 
 
 def test_synthetic_daily_matches_load_and_stays_in_the_window(grid):
@@ -162,7 +163,7 @@ def test_synthetic_daily_matches_load_and_stays_in_the_window(grid):
     totals = daily.groupby(["location_id", "category"])["count"].sum()
     assert totals.to_dict() == table.set_index(["location_id", "category"])["count"].to_dict()
     end = src.as_of()
-    assert daily["date"].max() <= end and daily["date"].min() > end - timedelta(days=90)
+    assert daily["date"].max() <= end and daily["date"].min() > end - timedelta(days=C.WINDOW_DAYS)
     assert daily.equals(src.daily(bbox, None))
 
 

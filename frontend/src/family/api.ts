@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { ApiError } from "../api/client";
 import type {
-  AccountOut, FamilyDetail, FamilySummary, InviteCreated, InvitePreview, JourneyCreated,
+  AccountOut, DemoPeople, FamilyDetail, FamilySummary, InviteCreated, InvitePreview, JourneyCreated,
 } from "../api/types";
 
 async function me<T>(path: string, init?: RequestInit): Promise<T> {
@@ -49,6 +49,7 @@ export const accountApi = {
     me<void>(`/families/${encodeURIComponent(fid)}/members/${encodeURIComponent(aid)}`, { method: "DELETE" }),
   rotateKeys: (fid: string, key_version: number, wrapped: Record<string, string>) =>
     me<void>(`/families/${encodeURIComponent(fid)}/keys`, { method: "PUT", body: JSON.stringify({ key_version, wrapped }) }),
+  demoPeople: () => me<DemoPeople>("/demo-people"),
   startFamilyJourney: (fid: string, wrapped_journey_key: string, key_version: number, expires_in_min = 120) =>
     me<JourneyCreated>(`/families/${encodeURIComponent(fid)}/journeys`,
       post({ wrapped_journey_key, key_version, expires_in_min })),
@@ -58,6 +59,10 @@ export const useAccount = () => useQuery({ queryKey: ["account"], queryFn: accou
 
 export const useFamilies = (enabled: boolean) =>
   useQuery({ queryKey: ["families"], queryFn: accountApi.families, enabled, retry: false });
+
+/** The demo family's fixed spots. The server answers with an empty list for every account but the demo one. */
+export const useDemoPeople = (accountId: string | null) =>
+  useQuery({ queryKey: ["demo-people", accountId], queryFn: accountApi.demoPeople, enabled: Boolean(accountId), retry: false });
 
 export const useFamily = (fid: string | null) =>
   useQuery({ queryKey: ["family", fid], queryFn: () => accountApi.family(fid!), enabled: Boolean(fid), retry: false });

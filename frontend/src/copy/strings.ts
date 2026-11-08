@@ -45,6 +45,9 @@ export const strings = {
   searchFailed: "Search is unavailable right now. Try again.",
   yourLocation: "Your location",
   droppedPin: "Dropped pin",
+  personNear: (street: string) => `Near ${street}`,
+  startHere: "Start here",
+  endHere: "End here",
   presetStart: (name: string) => `${name} (start)`,
   presetEnd: (name: string) => `${name} (end)`,
   swap: "Swap",
@@ -81,7 +84,7 @@ export const strings = {
   selectRoute: (label: string) => `Select ${label}`,
   recommended: (label: string) => `Recommended: ${label}`,
   holdsIn: (draws: number, n: number) => `Holds in ${draws} of ${n} simulations`,
-  incidentCount: (n: number, window = "last 90 days") =>
+  incidentCount: (n: number, window = "last 30 days") =>
     `${n} reported ${n === 1 ? "incident" : "incidents"}, ${window.toLowerCase()}`,
   incidentCategory: (category: string, n: number) => `${category.replace(/_/g, " ")}: ${n}`,
   asOf: (date: string) => `as of ${date}`,

@@ -1,7 +1,8 @@
 """Accounts, sessions, families, invites and the family stream. Everything is under /api/me.
 
 The session cookie is set with Path=/api/me, so browsers never send it to /api/routes or /api/routes/reroute:
-the server still cannot link a route request to a person (spec B5). No endpoint here takes or stores a location.
+the server still cannot link a route request to a person (spec B5). No endpoint here takes or stores a location;
+/demo-people only reads the fixed, made-up spots of the demo family.
 A family member who isn't one gets 404, never 403, so family ids can't be probed.
 """
 from __future__ import annotations
@@ -17,6 +18,7 @@ from waykin.accounts.hub import FamilyHub, FamilyJourney
 from waykin.accounts.security import RateLimiter
 from waykin.accounts.store import Account, AccountStore, StoreError
 from waykin.api.deps import api_error, get_state
+from waykin.demo import people as demo_family
 
 router = APIRouter(prefix="/me")
 COOKIE, COOKIE_PATH = "wk_session", "/api/me"
@@ -118,6 +120,20 @@ def who_am_i(me: Account = Depends(current)):
     return _account_out(me)
 
 
+@router.get("/demo-people", response_model=S.DemoPeople)
+def demo_people(me: Account = Depends(current), state=Depends(get_state)) -> S.DemoPeople:
+    """Fixed, made-up spots from waykin/demo/people.json, for the demo account only; everyone else gets []."""
+    if not state.settings.DEMO_MODE:
+        return S.DemoPeople(people=[])
+    return S.DemoPeople(people=demo_family.people_for(ensure_accounts(state), me))
+
+
+def _not_the_demo_account(state, me: Account) -> None:
+    """The demo login is shared by everyone trying the published demo, so nobody can break it for the rest."""
+    if state.settings.DEMO_MODE and demo_family.is_presenter(me):
+        raise api_error(403, "forbidden", "the demo account can't do this")
+
+
 @router.put("/account/public-key", status_code=204)
 def set_public_key(body: S.PublicKeyIn, me: Account = Depends(current), accounts: AccountStore = Depends(store)):
     accounts.set_public_key(me.id, body.public_key)
@@ -126,6 +142,7 @@ def set_public_key(body: S.PublicKeyIn, me: Account = Depends(current), accounts
 
 @router.delete("/account", status_code=204)
 async def delete_account(request: Request, me: Account = Depends(current), state=Depends(get_state)) -> Response:
+    _not_the_demo_account(state, me)
     accounts = ensure_accounts(state)
     for fid in accounts.delete_account(me.id):
         state.family_hub.drop_walker(fid, me.id)
@@ -190,6 +207,7 @@ async def join_family(fid: str, body: S.JoinFamily, me: Account = Depends(curren
 
 @router.delete("/families/{fid}/members/{aid}", status_code=204)
 async def remove_member(fid: str, aid: str, me: Account = Depends(current), state=Depends(get_state)) -> Response:
+    _not_the_demo_account(state, me)
     accounts = ensure_accounts(state)
     fam = _member_or_404(accounts, fid, me)
     if aid != me.id and fam["owner_id"] != me.id:

@@ -72,6 +72,19 @@ class DemoPreset(BaseModel):
     expected: Literal["recommend", "abstain", "reroute"]
 
 
+class DemoPerson(BaseModel):
+    """A seeded demo account at a made-up spot (waykin/demo/people.json). Never a real person's location."""
+    account_id: str
+    display_name: str
+    family_id: str
+    position: LatLon
+    near: str | None
+
+
+class DemoPeople(BaseModel):
+    people: list[DemoPerson]
+
+
 class Meta(BaseModel):
     api_version: Literal["1"] = "1"
     provenance: Provenance
