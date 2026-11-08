@@ -56,6 +56,8 @@ def build_state(settings: Settings) -> tuple[AppState, HazardStreamHub]:
     from waykin.routing.hazards import hazard_edges
 
     graph = load_graph(settings.build_dir / "graph")
+    graph.modes                     # build each mode's network now, not on the first request
+    from waykin.data.walk_pressure import build_walk_pressure
     bundle = load_exposure(settings.build_dir / "exposure", settings.EXPOSURE_SOURCE, settings.load_radii,
                            graph.graph_hash)
     hub = HazardStreamHub(lambda: state.hazards)
@@ -63,7 +65,8 @@ def build_state(settings: Settings) -> tuple[AppState, HazardStreamHub]:
                          edge_mapper=lambda req: hazard_edges(graph, req.lat, req.lon, req.radius_m).tolist(),
                          on_change=hub.publish)
     state = AppState(settings=settings, graph=graph, exposure=bundle, hazards=hstore, journeys=jstore, relay=relay,
-                     accounts=AccountStore(settings.accounts_db_path), family_hub=FamilyHub())
+                     accounts=AccountStore(settings.accounts_db_path), family_hub=FamilyHub(),
+                     walk=build_walk_pressure(graph, bundle.locations, bundle.daily, bundle.as_of, bundle.radii))
     return state, hub
 
 
@@ -151,7 +154,7 @@ def _install_error_handlers(app: FastAPI) -> None:
         return _err(exc.status_code, code, str(exc.detail))
 
     try:
-        from waykin.routing.types import NoPathError, OutsideAreaError
+        from waykin.routing.types import ModeUnavailableError, NoPathError, OutsideAreaError
     except ImportError:  # routing folder not created yet
         return
 
@@ -161,7 +164,11 @@ def _install_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(NoPathError)
     async def _nopath(request: Request, exc: NoPathError):
-        return _err(422, "no_path", "No walking route found between these points.")
+        return _err(422, "no_path", "No route found between these points.")
+
+    @app.exception_handler(ModeUnavailableError)
+    async def _nomode(request: Request, exc: ModeUnavailableError):
+        return _err(422, "validation", "This travel mode isn't available. Rebuild the graph to enable driving.")
 
 
 app = create_app()

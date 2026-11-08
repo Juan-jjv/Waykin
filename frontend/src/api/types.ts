@@ -36,3 +36,4 @@ export type ErrorCode =
 export type AbstainReason = NonNullable<Decision["reason"]>;
 export type RouteLabel = RouteOption["label"];
 export type RadiusM = NonNullable<RoutesRequest["radius_m"]>;
+export type TravelMode = RoutesRequest["mode"];

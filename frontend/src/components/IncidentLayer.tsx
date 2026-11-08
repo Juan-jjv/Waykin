@@ -3,7 +3,7 @@ import { Popup, type MapLayerMouseEvent } from "maplibre-gl";
 import type { FeatureCollection } from "geojson";
 import type { IncidentPoint } from "../api/types";
 import { strings } from "../copy/strings";
-import { INCIDENT_COLORS } from "../map/colors";
+import { INCIDENT_COLORS, severityColorExpression, severityOf, worstCategory } from "../map/colors";
 import { useWaykinMap } from "../map/context";
 import { removeMapSource, setGeoJson, whenStyleReady } from "../map/geojson";
 import { useAppearance } from "../theme/appearance";
@@ -16,7 +16,18 @@ export function incidentRadius(count: number): number {
   return Math.min(4 + Math.sqrt(count) * 1.5, 16);
 }
 
-export function IncidentLayer({ points, windowLabel }: { points: IncidentPoint[]; windowLabel: string }) {
+/** Dots are drawn at 30% of incidentRadius at zoom 10, growing linearly to full size at zoom 15. */
+const DOT_ZOOM = { from: 10, to: 15, minScale: 0.3 };
+
+export function IncidentLayer({
+  points,
+  windowLabel,
+  severity,
+}: {
+  points: IncidentPoint[];
+  windowLabel: string;
+  severity: Record<string, number>;
+}) {
   const map = useWaykinMap();
   const { appearance } = useAppearance();
 
@@ -26,9 +37,16 @@ export function IncidentLayer({ points, windowLabel }: { points: IncidentPoint[]
       const feature = event.features?.[0];
       const count = Number(feature?.properties?.count ?? 0);
       const detail = String(feature?.properties?.detail ?? "");
+      const worst = String(feature?.properties?.worst ?? "");
       const node = document.createElement("div");
       const text = strings.incidentCount(count, windowLabel);
       node.textContent = detail ? `${text} (${detail})` : text;
+      if (worst) {
+        const line = document.createElement("div");
+        line.className = "wk-popup-sub";
+        line.textContent = strings.mostSerious(worst);
+        node.appendChild(line);
+      }
       popup.setLngLat(event.lngLat).setDOMContent(node).addTo(map);
     };
     const onEnter = () => {
@@ -46,6 +64,8 @@ export function IncidentLayer({ points, windowLabel }: { points: IncidentPoint[]
           properties: {
             count: point.count,
             radius: incidentRadius(point.count),
+            sev: severityOf(point.by_category, severity),
+            worst: worstCategory(point.by_category, severity) ?? "",
             detail: Object.entries(point.by_category)
               .filter(([, count]) => count > 0)
               .map(([name, count]) => strings.incidentCategory(name, count))
@@ -60,10 +80,13 @@ export function IncidentLayer({ points, windowLabel }: { points: IncidentPoint[]
           id: LAYER,
           type: "circle",
           source: SOURCE,
+          layout: { "circle-sort-key": ["get", "sev"] },
           paint: {
-            "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, ["*", ["get", "radius"], 0.3], 15, ["get", "radius"]],
-            "circle-color": INCIDENT_COLORS[appearance].fill,
-            "circle-opacity": 0.85,
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], DOT_ZOOM.from, ["*", ["get", "radius"], DOT_ZOOM.minScale],
+              DOT_ZOOM.to, ["get", "radius"]],
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- MapLibre expressions are untyped arrays
+            "circle-color": severityColorExpression(appearance) as any,
+            "circle-opacity": 0.9,
             "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 10, 0.25, 14, 1],
             "circle-stroke-color": INCIDENT_COLORS[appearance].stroke,
           },
@@ -88,7 +111,7 @@ export function IncidentLayer({ points, windowLabel }: { points: IncidentPoint[]
       popup.remove();
       if (map.getStyle()) removeMapSource(map, SOURCE, [LAYER]);
     };
-  }, [map, points, appearance, windowLabel]);
+  }, [map, points, appearance, windowLabel, severity]);
 
   return null;
 }

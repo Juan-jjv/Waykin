@@ -5,6 +5,7 @@ DEMO_BBOX = (-113.715, 53.335, -113.270, 53.720)  # (west, south, east, north): 
                                                # Changing it means rebuilding the graph and the exposure.
 GRAPH_PAD_M = 300.0                            # the graph AND the incidents are loaded for DEMO_BBOX padded by this
 WALK_SPEED_M_PER_MIN = 80.0                    # 4.8 km/h
+DRIVE_FALLBACK_KMH = 40.0                      # posted-speed fallback; driving minutes are free-flow, no traffic
 MIN_EDGE_MINUTES = 1e-3                        # no zero weights in csgraph
 SNAP_MAX_M = 250.0
 RADII_M = (50, 100, 200)
@@ -18,12 +19,23 @@ DIRICHLET_KAPPA = 5.0
 PRIOR_STRENGTH = 1.0                           # empirical-Bayes prior worth one window of reports (see A2.5)
 PRIOR_NODE_MIN_GAP_M = 30.0                    # graph nodes farther than this from every published point become zero-count prior locations
 LAMBDA_GRID = (0.0,) + tuple(float(x) for x in np.geomspace(0.05, 50.0, 11).round(4))  # minutes per attributed report, 12 values
-MAX_EXTRA_TIME = 0.25                          # at most 25% slower than fastest
+MAX_EXTRA_TIME = 0.40                          # lower-exposure may be at most 40% slower than fastest
 MIN_REDUCTION = 0.15                           # at least 15% lower than fastest ...
 MIN_DRAW_SHARE = 0.90                          # ... in at least 90% of draws
 MIN_REPORTS_FOR_SIGNAL = 1.0                   # below this the result is thin_data (sized for a 7-day window)
-BALANCED_MIN_REDUCTION = 0.05
 UNITS = f"reported incidents attributed to segments along this route, {ROUTE_WINDOW_PHRASE}"
+# Walking routes use the walk pressure model (waykin/data/walk_pressure.py) over the same window the map shows.
+WALK_HALF_LIFE_DAYS = 14.0                     # a report this old counts half as much as one from as_of
+# No-go zones: a circle around every spot whose most serious report in the map window is at least this severe
+# (homicide 5, weapons 3.5: the dark end of the dot colours). The lower-exposure route first keeps as much of its
+# length out of these circles as the time cap allows, then minimises reports passed.
+AVOID_MIN_SEVERITY = 3.5
+AVOID_RADIUS_M = 100.0
+AVOID_MINUTES_PER_M = 10.0                     # search penalty: a metre inside a zone costs as much as 10 minutes
+WALK_SAMPLE_STEP_M = 10.0                      # points along each walkable edge for the closeness integral
+WALK_WINDOW_PHRASE = f"last {WINDOW_DAYS} days"
+WALK_UNITS = (f"reports near this route, {WALK_WINDOW_PHRASE}; closer, more recent and more serious reports "
+              "count more")
 UNITS_SHORT = "reported incidents"
 DISCLAIMER = ("Counts of reported incidents near street segments, from public police data. "
               "They describe the past, not what will happen on your walk. "

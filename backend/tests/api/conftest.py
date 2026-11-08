@@ -29,7 +29,7 @@ def real_state():
     from waykin.routing.testing import make_grid_graph
     from waykin.state import AppState
 
-    g = make_grid_graph()
+    g = make_grid_graph(drive_kmh=40.0)
     s = Settings(WAYKIN_MOCK=False, RELAY_PLAINTEXT=True, ADMIN_TOKEN="admin", DEMO_MODE=False)
     j = JourneyStore()
     return AppState(settings=s, graph=g, exposure=make_synthetic_bundle_for_tests(g),

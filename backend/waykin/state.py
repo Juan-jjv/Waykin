@@ -21,3 +21,4 @@ class AppState:
     relay: "RelayHub"
     accounts: Any = None  # waykin.accounts.store.AccountStore; created on first use if a test leaves it unset
     family_hub: Any = None  # waykin.accounts.hub.FamilyHub
+    walk: Any = None        # waykin.data.walk_pressure.WalkPressure; built at startup, or on first walking route

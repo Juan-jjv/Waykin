@@ -32,7 +32,7 @@
  "thresholds": {
   "min_reduction": 0.15,
   "min_draw_share": 0.9,
-  "max_extra_time": 0.25
+  "max_extra_time": 0.4
  },
  "demo_mode": false,
  "demo_presets": [
@@ -78,5 +78,14 @@
    },
    "expected": "reroute"
   }
- ]
+ ],
+ "modes": [
+  "walk"
+ ],
+ "severity": {
+  "assault": 3.0,
+  "robbery": 3.0,
+  "break_and_enter": 1.25,
+  "theft": 1.0
+ }
 }

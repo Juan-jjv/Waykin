@@ -881,6 +881,20 @@ export interface components {
             demo_mode: boolean;
             /** Demo Presets */
             demo_presets: components["schemas"]["DemoPreset"][];
+            /**
+             * Modes
+             * @default [
+             *       "walk"
+             *     ]
+             */
+            modes: ("walk" | "drive")[];
+            /**
+             * Severity
+             * @default {}
+             */
+            severity: {
+                [key: string]: number;
+            };
         };
         /** Provenance */
         Provenance: {
@@ -919,6 +933,12 @@ export interface components {
             destination: components["schemas"]["LatLonIn"];
             /** Radius M */
             radius_m?: (50 | 100 | 200) | null;
+            /**
+             * Mode
+             * @default walk
+             * @enum {string}
+             */
+            mode: "walk" | "drive";
         };
         /** RouteOption */
         RouteOption: {
@@ -928,7 +948,7 @@ export interface components {
              * Label
              * @enum {string}
              */
-            label: "fastest" | "balanced" | "lower_exposure";
+            label: "fastest" | "lower_exposure";
             /** Minutes */
             minutes: number;
             /** Extra Minutes */
@@ -956,7 +976,7 @@ export interface components {
              * Label
              * @enum {string}
              */
-            label: "fastest" | "balanced" | "lower_exposure";
+            label: "fastest" | "lower_exposure";
             /** Geometry */
             geometry: number[][];
         };
@@ -966,9 +986,21 @@ export interface components {
             destination: components["schemas"]["LatLonIn"];
             /** Radius M */
             radius_m?: (50 | 100 | 200) | null;
+            /**
+             * Mode
+             * @default walk
+             * @enum {string}
+             */
+            mode: "walk" | "drive";
         };
         /** RoutesResponse */
         RoutesResponse: {
+            /**
+             * Mode
+             * @default walk
+             * @enum {string}
+             */
+            mode: "walk" | "drive";
             provenance: components["schemas"]["Provenance"];
             origin_snapped: components["schemas"]["LatLon"];
             destination_snapped: components["schemas"]["LatLon"];

@@ -34,8 +34,8 @@ FASTEST_EDGES, CLEAR_ALT_EDGES, CLOSE_ALT_EDGES = range(0, 10), range(100, 110),
 def route_sets():
     """Keyed by origin node. Trip 0 has a clearly lower alternative; trip 1 has one that matches fastest."""
     fastest = cand("fastest", FASTEST_EDGES, 10)
-    return {0: CandidateSet(fastest, [cand("balanced", CLEAR_ALT_EDGES, 11)], None),
-            1: CandidateSet(fastest, [cand("balanced", CLOSE_ALT_EDGES, 11)], None)}
+    return {0: CandidateSet(fastest, [cand("lower_exposure", CLEAR_ALT_EDGES, 11)], None),
+            1: CandidateSet(fastest, [cand("lower_exposure", CLOSE_ALT_EDGES, 11)], None)}
 
 
 @pytest.fixture

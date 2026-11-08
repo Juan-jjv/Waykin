@@ -13,6 +13,8 @@ export function RouteCard({
   onSelect,
   onShowSegments,
   onStartWalk,
+  startLabel = strings.startWalk,
+  exposureNoun,
 }: {
   route: RouteOption;
   units: string;
@@ -22,6 +24,8 @@ export function RouteCard({
   onSelect: () => void;
   onShowSegments: () => void;
   onStartWalk: () => void;
+  startLabel?: string;
+  exposureNoun?: string;
 }) {
   const label = routeLabelText[route.label];
   const extra = formatExtra(route.extra_minutes);
@@ -39,7 +43,7 @@ export function RouteCard({
           {extra ? <small>{extra}</small> : null}
         </span>
       </button>
-      <p className="exposure">{formatExposure(route.exposure)}</p>
+      <p className="exposure">{formatExposure(route.exposure, exposureNoun)}</p>
       <p className="units">{units}</p>
       {diff ? <p className="diff">{diff}</p> : null}
       {route.draws_better != null ? <StabilityBadge drawsBetter={route.draws_better} nDraws={nDraws} /> : null}
@@ -56,7 +60,7 @@ export function RouteCard({
       </div>
       {selected ? (
         <button type="button" className="btn-primary" onClick={onStartWalk}>
-          {strings.startWalk}
+          {startLabel}
         </button>
       ) : null}
     </article>

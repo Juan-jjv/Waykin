@@ -47,7 +47,7 @@ def row_counts(locations: pd.DataFrame, A: sp.csr_matrix) -> np.ndarray:
 
 def build_radius(locations: pd.DataFrame, graph, radius_m: int, n_draws: int = C.N_DRAWS):
     """(A, X, mean, observed, allocation stats) for one radius."""
-    A, stats = build_allocation(locations, graph, radius_m, category_config().severity)
+    A, stats = build_allocation(locations, graph, radius_m, category_config().catchment)
     counts = row_counts(locations, A)
     X = simulate(A, counts, n_draws=n_draws, radius_m=int(radius_m))
     mean = X.mean(axis=1, dtype=np.float64).astype(np.float32)

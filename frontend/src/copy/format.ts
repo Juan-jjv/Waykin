@@ -11,8 +11,8 @@ export function formatAsOf(iso: string): string {
   }).format(new Date(Date.UTC(year, month - 1, day)));
 }
 
-export function formatExposure(exposure: Interval): string {
-  return `≈ ${exposure.p50.toFixed(1)} reported incidents (${exposure.p10.toFixed(1)}–${exposure.p90.toFixed(1)})`;
+export function formatExposure(exposure: Interval, noun = "reported incidents"): string {
+  return `≈ ${exposure.p50.toFixed(1)} ${noun} (${exposure.p10.toFixed(1)}–${exposure.p90.toFixed(1)})`;
 }
 
 export function formatDiff(diff: Interval | null): string | null {

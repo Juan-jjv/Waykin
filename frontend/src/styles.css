@@ -8,6 +8,8 @@
   --separator: rgba(60, 60, 67, 0.16);
   --fill: rgba(120, 120, 128, 0.16);
   --accent: #007aff;
+  --control: #e5e5ea;
+  --control-border: rgba(60, 60, 67, 0.29);
   --glass: rgba(255, 255, 255, 0.78);
   --glass-text: #1c1c1e;
   --glass-border: rgba(0, 0, 0, 0.08);
@@ -27,6 +29,8 @@
   --separator: rgba(84, 84, 88, 0.65);
   --fill: rgba(120, 120, 128, 0.28);
   --accent: #0a84ff;
+  --control: #3a3a3c;
+  --control-border: rgba(235, 235, 245, 0.3);
   --glass: rgba(28, 28, 30, 0.72);
   --glass-text: #f2f2f7;
   --glass-border: rgba(255, 255, 255, 0.12);
@@ -197,7 +201,7 @@ button { font: inherit; }
   gap: 12px;
   margin-top: 12px;
   font-size: 14px;
-  color: var(--text-secondary);
+  color: var(--glass-text);
 }
 
 .select-wrap { position: relative; }
@@ -216,16 +220,23 @@ button { font: inherit; }
   pointer-events: none;
 }
 
+/* Opaque colours: Chrome on Windows draws the open option list from the select's own background and colour, so a
+   translucent fill left light text on a light list in dark mode. */
 .select-wrap select {
   appearance: none;
   padding: 7px 30px 7px 12px;
-  border: none;
+  border: 1px solid var(--control-border);
   border-radius: 10px;
-  background: var(--fill);
+  background: var(--control);
   color: var(--text);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
+}
+
+.select-wrap select option {
+  background: var(--card);
+  color: var(--text);
 }
 
 .select-wrap select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -461,6 +472,11 @@ button { font: inherit; }
 .place-option { cursor: pointer; }
 .place-option.active { background: var(--fill); }
 .place-status { color: var(--text-secondary); }
+
+/* Quick start choices (Your location, family members) shown before typing */
+.place-option.quick { display: flex; flex-direction: column; gap: 1px; }
+.quick-label { font-weight: 600; color: var(--text); }
+.quick-hint { font-size: 12px; color: var(--text-secondary); }
 
 .point-actions {
   display: flex;
@@ -902,3 +918,74 @@ button { font: inherit; }
   gap: 10px;
 }
 .modal-card h2 { margin: 0; }
+
+/* Walk / Drive segmented control on the plan sheet */
+.mode-switch {
+  display: flex;
+  gap: 2px;
+  margin-top: 12px;
+  padding: 2px;
+  border-radius: 10px;
+  background: var(--fill);
+}
+.mode-opt {
+  flex: 1;
+  min-height: 34px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.mode-opt.on { background: var(--card); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12); }
+.mode-opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Dot colour key: a slim vertical pill, darkest at the top. Right side, under the light/dark button (the zoom buttons
+   sit top-left). Same glass as the map buttons. */
+.map-legend {
+  position: absolute;
+  z-index: 999;
+  top: 64px;
+  right: 12px;
+  min-width: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 8px 10px;
+  border-radius: 22px;
+  border: 0.5px solid var(--glass-border);
+  background: var(--glass);
+  color: var(--glass-text);
+  backdrop-filter: blur(16px) saturate(1.4);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18), 0 0 0 0.5px rgba(0, 0, 0, 0.04);
+  pointer-events: none;
+}
+[data-theme="dark"] .map-legend {
+  background: rgba(44, 44, 46, 0.86);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+.map-legend-title {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.map-legend-bar {
+  width: 10px;
+  height: 96px;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.18), 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+[data-theme="dark"] .map-legend-bar { box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.25); }
+.wk-popup-sub { margin-top: 2px; font-weight: 600; }
+
+/* Phones: the map attribution button takes top 64px on the right, so the key sits below it, collapsed-friendly */
+@media (max-width: 767px) {
+  .map-legend { top: 100px; }
+}

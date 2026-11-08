@@ -56,17 +56,19 @@ def test_blocked_request_leaves_the_shared_graph_unchanged():
     assert np.array_equal(after, before)
 
 
-def test_alternatives_follow_contract_order_and_balanced_is_relative():
+def test_only_fastest_and_lower_exposure_and_lower_is_the_least_exposed_within_the_cap():
+    from waykin import constants as C
     graph = make_grid_graph()
     rng = np.random.default_rng(3)
     for _ in range(20):
         exposure = rng.gamma(0.5, 2.0, graph.n_edges)
         result = candidate_set(graph, exposure, 0, graph.n_nodes - 1)
-        labels = [c.label for c in result.alternatives]
-        assert labels in ([], ["balanced"], ["lower_exposure"], ["balanced", "lower_exposure"])
-        for c in result.alternatives:
-            if c.label == "balanced":
-                assert c.exposure_mean <= result.fastest.exposure_mean * 0.95 + 1e-9
+        assert [c.label for c in result.alternatives] in ([], ["lower_exposure"])
+        if result.lower_exposure is not None:
+            low = result.lower_exposure
+            assert low.minutes <= result.fastest.minutes * (1 + C.MAX_EXTRA_TIME) + 1e-9
+            assert low.exposure_mean < result.fastest.exposure_mean
+            assert result.uncapped is None or result.uncapped.minutes > result.fastest.minutes * (1 + C.MAX_EXTRA_TIME)
 
 
 def test_route_edges_are_contiguous():

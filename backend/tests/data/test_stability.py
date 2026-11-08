@@ -43,14 +43,15 @@ def test_indistinguishable_when_lower_in_only_85_percent(make_cs):
 
 def test_too_costly_when_only_the_uncapped_route_is_lower(make_cs):
     X = X_with([10, 10, 9.5, 9.5, 1, 1])
-    cs = make_cs(alts=[("balanced", (2, 3), 11.0)], uncapped=((4, 5), 20.0))
+    cs = make_cs(alts=[("lower_exposure", (2, 3), 11.0)], uncapped=((4, 5), 20.0))
     a = assess(cs, bundle(X), 100)
     assert (a.status, a.reason) == ("abstain", "too_costly")
 
 
 def test_lower_route_above_time_cap_is_not_recommended(make_cs):
     X = X_with([10, 10, 1, 1])
-    a = assess(make_cs(alts=[("lower_exposure", (2, 3), 13.0)]), bundle(X), 100)  # 13 > 1.25·10
+    over = 10.0 * (1 + C.MAX_EXTRA_TIME) + 1.0                                    # just past the cap
+    a = assess(make_cs(alts=[("lower_exposure", (2, 3), over)]), bundle(X), 100)
     assert a.status == "abstain"
 
 
@@ -69,7 +70,7 @@ def test_no_alternative(make_cs):
 
 def test_recommends_fewest_extra_minutes(make_cs):
     X = X_with([10, 10, 1, 1, 2, 2])
-    cs = make_cs(alts=[("lower_exposure", (2, 3), 12.0), ("balanced", (4, 5), 10.5)])
+    cs = make_cs(alts=[("lower_exposure", (2, 3), 12.0), ("lower_exposure", (4, 5), 10.5)])
     a = assess(cs, bundle(X), 100)
     assert a.recommended_route_id == cs.alternatives[1].route_id
 
@@ -77,7 +78,7 @@ def test_recommends_fewest_extra_minutes(make_cs):
 def test_never_recommends_fastest(make_cs):
     for seed in range(5):
         X = X_with(np.random.default_rng(seed).uniform(0, 10, 6), spread=0.5, seed=seed)
-        cs = make_cs(alts=[("balanced", (2, 3), 10.5), ("lower_exposure", (4, 5), 12.0)])
+        cs = make_cs(alts=[("lower_exposure", (2, 3), 10.5), ("lower_exposure", (4, 5), 12.0)])
         assert assess(cs, bundle(X), 100).recommended_route_id != cs.fastest.route_id
 
 
@@ -98,7 +99,7 @@ def test_single_radius_leaves_sensitivity_unset(make_cs):
 @pytest.mark.timing
 def test_assess_is_fast(make_cs):
     X = np.random.default_rng(0).random((25_000, N), dtype=np.float32)
-    cs = make_cs(alts=[("balanced", range(100, 160), 10.5), ("lower_exposure", range(200, 270), 12.0)],
+    cs = make_cs(alts=[("lower_exposure", range(100, 160), 10.5), ("lower_exposure", range(200, 270), 12.0)],
                  fastest=(range(0, 50), 10.0))
     b = bundle(X)
     assess(cs, b, 100)

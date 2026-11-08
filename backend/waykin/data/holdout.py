@@ -29,7 +29,7 @@ def holdout(graph, source, bbox, categories: list[str], category_preset: str, tr
     test = pivot_locations(source.window(bbox, categories, split, as_of))
     bundle = make_bundle(train, graph, [radius_m], source=source.name, source_label=source.label, as_of=split,
                          category_preset=category_preset, categories=categories, window_days=TRAIN_DAYS)
-    A_test, _ = build_allocation(test, graph, radius_m, category_config().severity)
+    A_test, _ = build_allocation(test, graph, radius_m, category_config().catchment)
     later = np.asarray(A_test.T @ row_counts(test, A_test))
 
     recommended_reports, fastest_reports = [], []

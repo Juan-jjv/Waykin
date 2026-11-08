@@ -43,19 +43,25 @@ function rng(seed: number) {
   };
 }
 
-/** Walks the polyline at 80 m/min × speedMultiplier, emitting every intervalMs with seeded ±3 m jitter. */
+/** Moves along the polyline at metresPerMin (default walking, 80 m/min) × speedMultiplier, emitting every intervalMs
+ * with seeded ±3 m jitter. */
 export class SimGeo implements GeoProvider {
   private route: [number, number][];
   private travelled = 0;
   private timer: ReturnType<typeof setInterval> | null = null;
   private rand: () => number;
   private speed: number;
+  private metresPerMin: number;
   private intervalMs: number;
   private last: [number, number];
 
-  constructor(geometry: [number, number][], o: { speedMultiplier?: number; seed?: number; intervalMs?: number } = {}) {
+  constructor(
+    geometry: [number, number][],
+    o: { speedMultiplier?: number; seed?: number; intervalMs?: number; metresPerMin?: number } = {},
+  ) {
     this.route = geometry;
     this.speed = o.speedMultiplier ?? 1;
+    this.metresPerMin = o.metresPerMin ?? WALK_M_PER_MIN;
     this.intervalMs = o.intervalMs ?? 1000;
     this.rand = rng(o.seed ?? 20261106);
     this.last = geometry[0];
@@ -83,7 +89,7 @@ export class SimGeo implements GeoProvider {
   }
 
   tick(): GeoPoint {
-    this.travelled += (WALK_M_PER_MIN / 60) * this.speed * (this.intervalMs / 1000);
+    this.travelled += (this.metresPerMin / 60) * this.speed * (this.intervalMs / 1000);
     const [lat, lon] = this.positionAt(this.travelled);
     this.last = [lat, lon];
     const j = () => (this.rand() * 2 - 1) * 3; // ±3 m

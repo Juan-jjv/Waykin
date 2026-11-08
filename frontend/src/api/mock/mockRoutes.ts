@@ -12,26 +12,24 @@ import type {
   RoutesResponse,
   TopSegment,
 } from "../types";
-import { abstainCopy, strings } from "../../copy/strings";
+import { abstainBody, strings } from "../../copy/strings";
 
 const meta = metaJson as Meta;
 const ABSTAIN_PRESET_ID = "overlap";
 
 const RADIUS_DECISIONS: Record<string, string> = {
-  "50": "recommend:balanced",
+  "50": "recommend:lower_exposure",
   "100": "recommend:lower_exposure",
   "200": "abstain:indistinguishable",
 };
 
 const SEPARATED: Record<RouteLabel, Interval> = {
   fastest: { p10: 8.4, p50: 12.6, p90: 17.2, mean: 12.8 },
-  balanced: { p10: 5.1, p50: 8.4, p90: 11.9, mean: 8.6 },
   lower_exposure: { p10: 2.8, p50: 5.2, p90: 8.1, mean: 5.4 },
 };
 
 const OVERLAP: Record<RouteLabel, Interval> = {
   fastest: { p10: 7.4, p50: 10.4, p90: 14.2, mean: 10.6 },
-  balanced: { p10: 7.1, p50: 10.1, p90: 14.6, mean: 10.4 },
   lower_exposure: { p10: 6.8, p50: 9.8, p90: 14.8, mean: 10.2 },
 };
 
@@ -57,6 +55,7 @@ export async function buildMockRoutes(request: RoutesRequest): Promise<RoutesRes
   const decision = makeDecision(routes, radius, overlap);
 
   return {
+    mode: "walk",
     provenance: provenanceFor(radius),
     origin_snapped: snapped(traced[0].geometry[0], origin),
     destination_snapped: snapped(traced[0].geometry[traced[0].geometry.length - 1], destination),
@@ -73,7 +72,6 @@ function snapped(point: [number, number] | undefined, fallback: LatLon): LatLon 
 
 function makeDecision(routes: RouteOption[], radius: number, overlapPreset: boolean): Decision {
   const fastest = routes.find((route) => route.label === "fastest");
-  const balanced = routes.find((route) => route.label === "balanced");
   const lower = routes.find((route) => route.label === "lower_exposure");
   const base = {
     thresholds: meta.thresholds,
@@ -88,33 +86,24 @@ function makeDecision(routes: RouteOption[], radius: number, overlapPreset: bool
       status: "abstain",
       recommended_route_id: null,
       reason: "indistinguishable",
-      message: abstainCopy.indistinguishable.body,
+      message: abstainBody("indistinguishable", meta.thresholds.max_extra_time),
     };
   }
 
-  if (!fastest || (!balanced && !lower)) {
+  if (!fastest || !lower) {
     return {
       ...base,
       status: "abstain",
       recommended_route_id: null,
       reason: "no_alternative",
-      message: abstainCopy.no_alternative.body,
+      message: abstainBody("no_alternative", meta.thresholds.max_extra_time),
       radius_sensitive: false,
       radius_decisions: null,
     };
   }
 
   const cap = fastest.minutes * (1 + meta.thresholds.max_extra_time);
-  if (radius === 50 && balanced && balanced.minutes <= cap) {
-    return {
-      ...base,
-      status: "recommend",
-      recommended_route_id: balanced.route_id,
-      reason: null,
-      message: strings.messages.recommendBalanced,
-    };
-  }
-  if (lower && lower.minutes <= cap) {
+  if (lower.minutes <= cap) {
     return {
       ...base,
       status: "recommend",
@@ -123,21 +112,12 @@ function makeDecision(routes: RouteOption[], radius: number, overlapPreset: bool
       message: strings.messages.recommendLower,
     };
   }
-  if (balanced && balanced.minutes <= cap) {
-    return {
-      ...base,
-      status: "recommend",
-      recommended_route_id: balanced.route_id,
-      reason: null,
-      message: strings.messages.recommendBalanced,
-    };
-  }
   return {
     ...base,
     status: "abstain",
     recommended_route_id: null,
     reason: "too_costly",
-    message: abstainCopy.too_costly.body,
+    message: abstainBody("too_costly", meta.thresholds.max_extra_time),
     radius_sensitive: true,
   };
 }
@@ -156,7 +136,7 @@ function makeRoutes(
   const fastestLabel = labels[0] ?? "fastest";
   const fastestExposure = scaleInterval(table[fastestLabel], factor);
 
-  return traced.map((route, index) => {
+  return traced.slice(0, labels.length).map((route, index) => {
     const label = labels[index] ?? "fastest";
     const minutes = route.distance / 80;
     const exposure = scaleInterval(table[label], factor);
@@ -180,28 +160,21 @@ function makeRoutes(
 
 function labelsFor(traced: TracedRoute[]): RouteLabel[] {
   if (traced.length === 1) return ["fastest"];
-  if (traced.length === 2) {
-    const extra = traced[1].distance / traced[0].distance - 1;
-    return ["fastest", extra >= 0.12 ? "lower_exposure" : "balanced"];
-  }
-  return ["fastest", "balanced", "lower_exposure"];
+  return ["fastest", "lower_exposure"];
 }
 
 function drawsFor(label: RouteLabel, counts: "separated" | "overlap", radius: number): number | null {
   if (label === "fastest") return null;
-  if (counts === "overlap") return label === "balanced" ? 214 : 188;
-  if (label === "balanced") return radius === 50 ? 468 : 452;
+  if (counts === "overlap") return 188;
   return radius === 50 ? 401 : 471;
 }
 
 function explanation(label: RouteLabel, mode: "separated" | "overlap"): string {
   if (mode === "overlap") {
     if (label === "fastest") return strings.messages.explainFastestOverlap;
-    if (label === "balanced") return strings.messages.explainBalancedOverlap;
     return strings.messages.explainLowerOverlap;
   }
   if (label === "fastest") return strings.messages.explainFastest;
-  if (label === "balanced") return strings.messages.explainBalanced;
   return strings.messages.explainLower;
 }
 

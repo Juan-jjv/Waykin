@@ -104,7 +104,8 @@ def top_segments(
     return groups[:k]
 
 
-def explanation_text(label: str, minutes: float, extra_min: float, diff_p50: float | None, p50: float) -> str:
+def explanation_text(label: str, minutes: float, extra_min: float, diff_p50: float | None, p50: float,
+                     mode: str = "walk") -> str:
     """Build the API's short explanation: counts only, never a judgment about the route."""
     import math
     from waykin import constants as C
@@ -112,8 +113,15 @@ def explanation_text(label: str, minutes: float, extra_min: float, diff_p50: flo
     def whole(value: float) -> int:
         return int(math.floor(float(value) + 0.5))
 
+    if mode == "walk":
+        if label == "fastest":
+            return f"Fastest option, {whole(minutes)} min. Passes about {p50:.1f} weighted reports nearby."
+        if diff_p50 is not None and diff_p50 < 0:
+            return (f"+{whole(extra_min)} min vs fastest. Passes about {abs(diff_p50):.1f} fewer weighted reports "
+                    f"nearby ({C.WALK_WINDOW_PHRASE}).")
+        return f"+{whole(extra_min)} min vs fastest. Passes about as many reports nearby."
     if label == "fastest":
-        return f"Fastest option, {whole(minutes)} min. About {p50:.1f} {C.UNITS_SHORT}."
+        return f"Fastest option, {whole(minutes)} min by car. About {p50:.1f} {C.UNITS_SHORT}."
     if diff_p50 is not None and diff_p50 < 0:
         return (f"+{whole(extra_min)} min vs fastest. About {abs(diff_p50):.1f} fewer reported incidents "
                 f"attributed to segments along this route ({C.ROUTE_WINDOW_PHRASE}).")

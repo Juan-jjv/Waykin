@@ -99,9 +99,10 @@
   "thresholds": {
    "min_reduction": 0.15,
    "min_draw_share": 0.9,
-   "max_extra_time": 0.25
+   "max_extra_time": 0.4
   },
   "n_draws": 500
  },
- "blocked_edge_count": 2
+ "blocked_edge_count": 2,
+ "mode": "walk"
 }

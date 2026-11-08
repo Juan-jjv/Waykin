@@ -2,7 +2,7 @@
   {
     "id": "recommend",
     "name": "A clear lower-exposure route",
-    "description": "For about the same walking time, the balanced route has at least 15% fewer reported incidents in more than 9 of 10 simulations.",
+    "description": "For a little more walking time, the lower-exposure route passes at least 15% fewer weighted reports in more than 9 of 10 simulations.",
     "origin": {
       "lat": 53.551209,
       "lon": -113.496729

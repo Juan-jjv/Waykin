@@ -9,8 +9,10 @@ import shapely
 from waykin.routing.graph import Graph, assemble_graph, latlon_to_utm, utm_to_latlon, write_artifacts
 
 
-def make_grid_graph(n: int = 12, spacing_m: float = 100.0, sw_latlon=(53.515, -113.525)) -> Graph:
+def make_grid_graph(n: int = 12, spacing_m: float = 100.0, sw_latlon=(53.515, -113.525), drive_kmh: float | None = None) -> Graph:
     """An n×n grid of streets `spacing_m` apart, south-west corner at `sw_latlon`.
+
+    Every street is walkable; with `drive_kmh` every street is also drivable both ways at that speed.
 
     Rows are "Test Ave 1..n" (west-east), columns are "Test St 1..n" (south-north).
     Node id = row * n + col.
@@ -36,7 +38,11 @@ def make_grid_graph(n: int = 12, spacing_m: float = 100.0, sw_latlon=(53.515, -1
     coords = [np.array([[node_lat[a], node_lon[a]], [node_lat[b], node_lon[b]]]) for a, b in zip(u, v)]
     lengths = np.full(len(u), float(spacing_m))
     bbox = (float(node_lon.min()), float(node_lat.min()), float(node_lon.max()), float(node_lat.max()))
-    return assemble_graph(node_lat, node_lon, node_x, node_y, u, v, lengths, names, geoms, coords, bbox=bbox)
+    drive = {}
+    if drive_kmh is not None:
+        drive = {"edge_drive_fwd": np.ones(len(u), bool), "edge_drive_rev": np.ones(len(u), bool),
+                 "edge_drive_kmh": np.full(len(u), float(drive_kmh))}
+    return assemble_graph(node_lat, node_lon, node_x, node_y, u, v, lengths, names, geoms, coords, bbox=bbox, **drive)
 
 
 def write_graph_artifacts(graph: Graph, out_dir: Path) -> None:

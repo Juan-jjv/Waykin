@@ -180,7 +180,7 @@
   },
   {
    "route_id": "b64951d97c",
-   "label": "balanced",
+   "label": "lower_exposure",
    "minutes": 25.0,
    "extra_minutes": 2.5,
    "distance_m": 2000.0,
@@ -338,177 +338,22 @@
     }
    ],
    "explanation": "+3 min vs fastest. About 5.8 fewer reported incidents attributed to segments along this route (last 7 days)."
-  },
-  {
-   "route_id": "d4bc061859",
-   "label": "lower_exposure",
-   "minutes": 27.5,
-   "extra_minutes": 5.0,
-   "distance_m": 2200.0,
-   "exposure": {
-    "p10": 3.1,
-    "p50": 4.4,
-    "p90": 6.0,
-    "mean": 4.5
-   },
-   "exposure_diff_vs_fastest": {
-    "p10": -10.2,
-    "p50": -8.0,
-    "p90": -5.9,
-    "mean": -8.03
-   },
-   "draws_better": 492,
-   "geometry": [
-    [
-     53.515,
-     -113.525
-    ],
-    [
-     53.515898,
-     -113.525053
-    ],
-    [
-     53.516796,
-     -113.525107
-    ],
-    [
-     53.517694,
-     -113.52516
-    ],
-    [
-     53.518592,
-     -113.525214
-    ],
-    [
-     53.51949,
-     -113.525267
-    ],
-    [
-     53.520388,
-     -113.525321
-    ],
-    [
-     53.521286,
-     -113.525374
-    ],
-    [
-     53.522184,
-     -113.525427
-    ],
-    [
-     53.523082,
-     -113.525481
-    ],
-    [
-     53.52398,
-     -113.525534
-    ],
-    [
-     53.524012,
-     -113.524027
-    ],
-    [
-     53.524044,
-     -113.52252
-    ],
-    [
-     53.524075,
-     -113.521013
-    ],
-    [
-     53.524107,
-     -113.519507
-    ],
-    [
-     53.524139,
-     -113.518
-    ],
-    [
-     53.524171,
-     -113.516493
-    ],
-    [
-     53.524202,
-     -113.514986
-    ],
-    [
-     53.524234,
-     -113.513479
-    ],
-    [
-     53.524266,
-     -113.511972
-    ],
-    [
-     53.524297,
-     -113.510465
-    ],
-    [
-     53.523399,
-     -113.510412
-    ],
-    [
-     53.522501,
-     -113.510359
-    ]
-   ],
-   "edge_ids": [
-    1,
-    24,
-    47,
-    70,
-    93,
-    116,
-    139,
-    162,
-    185,
-    208,
-    230,
-    232,
-    234,
-    236,
-    238,
-    240,
-    242,
-    244,
-    246,
-    248,
-    228,
-    205
-   ],
-   "top_segments": [
-    {
-     "edge_id": 238,
-     "name": "Test Ave 11",
-     "attributed": 0.9,
-     "geometry": [
-      [
-       53.524107,
-       -113.519507
-      ],
-      [
-       53.524139,
-       -113.518
-      ]
-     ]
-    }
-   ],
-   "explanation": "+5 min vs fastest. About 8.0 fewer reported incidents attributed to segments along this route (last 7 days)."
   }
  ],
  "decision": {
   "status": "recommend",
   "recommended_route_id": "b64951d97c",
   "reason": null,
-  "message": "Balanced has at least 15% fewer reported incidents than fastest in 471 of 500 simulations, for +3 min.",
+  "message": "Lower-exposure has at least 15% fewer reported incidents than fastest in 471 of 500 simulations, for +3 min.",
   "radius_sensitive": null,
   "radius_decisions": null,
   "thresholds": {
    "min_reduction": 0.15,
    "min_draw_share": 0.9,
-   "max_extra_time": 0.25
+   "max_extra_time": 0.4
   },
   "n_draws": 500
  },
- "blocked_edge_count": 0
+ "blocked_edge_count": 0,
+ "mode": "walk"
 }

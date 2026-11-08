@@ -35,6 +35,7 @@ class CategoryConfig:
     active_preset: str
     synthetic_weights: list[float]
     severity: dict[str, float]
+    catchment: dict[str, float]
 
     @property
     def active(self) -> list[str]:
@@ -55,12 +56,15 @@ def category_config() -> CategoryConfig:
         unknown = set(members) - set(cats)
         if unknown:
             raise ValueError(f"preset {name} uses unknown categories: {sorted(unknown)}")
-    severity = {c: float(w) for c, w in (raw.get("severity") or {}).items()}
-    if set(severity) - set(cats):
-        raise ValueError(f"severity uses unknown categories: {sorted(set(severity) - set(cats))}")
-    if any(w <= 0 for w in severity.values()):
-        raise ValueError("severity weights must be positive")
-    return CategoryConfig(cats, presets, raw["active_preset"], weights, severity)
+    tables = {}
+    for key in ("severity", "catchment"):
+        table = {c: float(w) for c, w in (raw.get(key) or {}).items()}
+        if set(table) - set(cats):
+            raise ValueError(f"{key} uses unknown categories: {sorted(set(table) - set(cats))}")
+        if any(w <= 0 for w in table.values()):
+            raise ValueError(f"{key} weights must be positive")
+        tables[key] = table
+    return CategoryConfig(cats, presets, raw["active_preset"], weights, tables["severity"], tables["catchment"])
 
 
 def get_source(name: str, data_dir: Path, graph=None) -> ExposureSource:

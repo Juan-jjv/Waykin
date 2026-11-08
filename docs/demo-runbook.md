@@ -21,6 +21,25 @@ _Owner: S2 (handed over by A4). One page._
 4. `python -m scripts.data.build_exposure --source eps --radii 100` (about 5 min).
 5. Start the backend with `EXPOSURE_SOURCE=eps`.
 
+The graph holds walking and driving on the same edges (Walk / Drive on the Plan page). Driving uses one-way streets
+and posted speeds (free-flow, no traffic). A graph built before driving existed still loads, as walking only.
+
+Walking and driving score reports differently. Driving uses the exposure build (step 4: last 7 days, each report
+shared among nearby streets). Walking uses `waykin/data/walk_pressure.py`, built at server startup in about a second:
+the last 30 days (what the map shows), weighted by how close the route passes, how recent (14-day half-life) and how
+serious each report is. Severity runs 1 to 5 (`severity` in `waykin/data/categories.yaml`, homicide 5, indecent act
+1.5, theft 1); the map shades each dot from light to dark red by its most serious report, using the same weights.
+Driving's catchment radii use the separate `catchment` table. Each trip offers two routes: fastest, and lower-exposure
+(the route with the fewest weighted reports that is at most 40% slower, `MAX_EXTRA_TIME` in `constants.py`). The Plan
+page starts on the lowest-pressure walking route when WayKin abstains.
+
+No-go zones: every spot whose most serious report in the last 30 days is a homicide or weapons offence (severity 3.5
+or more, the dark end of the dot colours) gets a 100 m circle. In both modes the lower-exposure route first keeps as
+much of its length out of these circles as the time cap allows, then minimises reports passed, and WayKin recommends
+it whenever it spends less time in them than the fastest route. Tune with `AVOID_MIN_SEVERITY`, `AVOID_RADIUS_M` and
+`AVOID_MINUTES_PER_M` in `constants.py`. The map key (top right) is a vertical scale
+from the most serious category (top, dark red) to the least serious (bottom, light red).
+
 A new graph invalidates every exposure build, so after step 3 always redo step 4. Routes count the last 7 days of
 reports (the map still shows up to 30 days); an exposure built before this change needs step 4 again.
 

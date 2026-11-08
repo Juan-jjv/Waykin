@@ -51,8 +51,74 @@ def is_walkable(tags: dict[str, str]) -> bool:
     return not any(key in tags and pattern.search(tags[key]) for key, pattern in _WALK_EXCLUDE.items())
 
 
-def extract_walk_ways(osm_file: Path, bbox, xml_out: Path) -> int:
-    """Write the walkable ways touching `bbox` (with all their nodes) from a .osm.pbf extract as OSM XML."""
+# osmnx's "drive" network filter.
+_DRIVE_EXCLUDE = {
+    "highway": re.compile("abandoned|bridleway|bus_guideway|construction|corridor|cycleway|elevator|escalator|footway|"
+                          "no|path|pedestrian|planned|platform|proposed|raceway|razed|rest_area|service|services|steps|"
+                          "track"),
+    "area": re.compile("yes"), "access": re.compile("private"), "motor_vehicle": re.compile("no"),
+    "motorcar": re.compile("no"),
+    "service": re.compile("alley|driveway|emergency_access|parking|parking_aisle|private"),
+}
+
+# Free-flow speed when a way has no usable maxspeed tag. Edmonton's default on residential streets is 40 km/h.
+DEFAULT_KMH = {
+    "motorway": 100.0, "motorway_link": 60.0, "trunk": 80.0, "trunk_link": 50.0,
+    "primary": 60.0, "primary_link": 40.0, "secondary": 60.0, "secondary_link": 40.0,
+    "tertiary": 50.0, "tertiary_link": 40.0, "unclassified": 40.0, "residential": 40.0, "living_street": 20.0,
+}
+FALLBACK_KMH = 40.0
+_NUMBER = re.compile(r"\d+(?:\.\d+)?")
+
+
+def is_drivable(tags: dict[str, str]) -> bool:
+    if "highway" not in tags:
+        return False
+    return not any(key in tags and pattern.search(tags[key]) for key, pattern in _DRIVE_EXCLUDE.items())
+
+
+def drive_directions(tags: dict[str, str]) -> tuple[bool, bool]:
+    """(along the way's node order, against it) for a drivable way."""
+    oneway = tags.get("oneway", "").strip().lower()
+    if oneway in ("yes", "true", "1"):
+        return True, False
+    if oneway in ("-1", "reverse"):
+        return False, True
+    if oneway == "no":
+        return True, True
+    if tags.get("junction") in ("roundabout", "circular") or tags.get("highway") in ("motorway", "motorway_link"):
+        return True, False
+    return True, True
+
+
+def drive_kmh(tags: dict[str, str]) -> float:
+    raw = tags.get("maxspeed", "")
+    match = _NUMBER.search(raw)
+    if match:
+        kmh = float(match.group()) * (1.609344 if "mph" in raw else 1.0)
+        if 5.0 <= kmh <= 130.0:
+            return kmh
+    return DEFAULT_KMH.get(tags.get("highway", ""), FALLBACK_KMH)
+
+
+def way_modes(tags: dict[str, str]) -> dict[str, str] | None:
+    """The WayKin tags for a way (walk, drive along/against node order, km/h), or None if neither mode may use it."""
+    walk, drive = is_walkable(tags), is_drivable(tags)
+    if not (walk or drive):
+        return None
+    fwd, rev = drive_directions(tags) if drive else (False, False)
+    kmh = drive_kmh(tags) if drive else FALLBACK_KMH
+    return {"wk_walk": "1" if walk else "0", "wk_dfwd": "1" if fwd else "0", "wk_drev": "1" if rev else "0",
+            "wk_kmh": f"{kmh:g}"}
+
+
+MODE_TAGS = ["wk_walk", "wk_dfwd", "wk_drev", "wk_kmh"]
+
+
+def extract_ways(osm_file: Path, bbox, xml_out: Path) -> int:
+    """Write the walkable or drivable ways touching `bbox` (with all their nodes) from a .osm.pbf extract as OSM XML.
+
+    Each way gets the `way_modes` tags, so the graph knows which edges each travel mode may use."""
     import osmium
 
     w, s, e, n = bbox
@@ -62,8 +128,10 @@ def extract_walk_ways(osm_file: Path, bbox, xml_out: Path) -> int:
                  .with_filter(osmium.filter.EntityFilter(osmium.osm.WAY)))
     for way in processor:
         tags = {t.k: t.v for t in way.tags}
-        if not is_walkable(tags):
+        modes = way_modes(tags)
+        if modes is None:
             continue
+        tags.update(modes)
         refs = [(nd.ref, nd.location) for nd in way.nodes if nd.location.valid()]
         if len(refs) < 2 or not any(w <= loc.lon <= e and s <= loc.lat <= n for _, loc in refs):
             continue
@@ -84,22 +152,55 @@ def extract_walk_ways(osm_file: Path, bbox, xml_out: Path) -> int:
     return len(ways)
 
 
+def extract_walk_ways(osm_file: Path, bbox, xml_out: Path) -> int:
+    """Back-compat name: the extract now holds every walkable or drivable way."""
+    return extract_ways(osm_file, bbox, xml_out)
+
+
+def mark_directed_modes(G) -> None:
+    """Give every directed edge `wk_go` (a car may travel it in this direction) and `wk_class` (the mode tags that
+    don't depend on direction). Edges without WayKin tags (an Overpass walk download) are walk-only.
+
+    osmnx's bidirectional loader keeps each way's node order on the forward copy and sets `reversed` on the other."""
+    for _, _, data in G.edges(data=True):
+        walk = data.get("wk_walk", "1") == "1"
+        fwd, rev = data.get("wk_dfwd", "0") == "1", data.get("wk_drev", "0") == "1"
+        kmh = data.get("wk_kmh", f"{FALLBACK_KMH:g}")
+        data["wk_go"] = rev if data.get("reversed", False) else fwd
+        data["wk_class"] = f"{int(walk)}{int(fwd or rev)}{int(fwd != rev)}:{kmh}"
+
+
 def _from_extract(ox, osm_file: Path, bbox, work_dir: Path):
     xml = work_dir / "walk_extract.osm"
+    tags = list(ox.settings.useful_tags_way)
     try:
-        extract_walk_ways(osm_file, bbox, xml)
-        return ox.graph_from_xml(xml, bidirectional=True, simplify=True, retain_all=True)
+        extract_ways(osm_file, bbox, xml)
+        ox.settings.useful_tags_way = tags + [t for t in MODE_TAGS if t not in tags]
+        G = ox.graph_from_xml(xml, bidirectional=True, simplify=False, retain_all=True)
     finally:
+        ox.settings.useful_tags_way = tags
         xml.unlink(missing_ok=True)
+    mark_directed_modes(G)
+    # Only merge edges with the same modes; a merged edge is drivable one way only if every piece of it is.
+    return ox.simplify_graph(G, edge_attrs_differ=["wk_class"],
+                             edge_attr_aggs={"length": sum, "travel_time": sum, "wk_go": all})
 
 
-def _undirected_largest(ox, G):
+def _largest(ox, G):
     major = int(ox.__version__.split(".")[0])
     if major >= 2:
-        # largest_component needs a directed graph in osmnx 2.x, so take it before converting.
-        return ox.convert.to_undirected(ox.truncate.largest_component(G, strongly=False))
-    G = ox.utils_graph.get_undirected(G)
+        return ox.truncate.largest_component(G, strongly=False)
     return ox.utils_graph.get_largest_component(G, strongly=False)
+
+
+def _flag(value) -> bool:
+    """A merged attribute is a list of the distinct values: all must hold."""
+    return all(value) if isinstance(value, list) else bool(value)
+
+
+def _kmh(value) -> float:
+    values = value if isinstance(value, list) else [value]
+    return min(float(v) for v in values)
 
 
 def build(out_dir: Path, bbox=C.DEMO_BBOX, osm_file: Path | None = None) -> dict:
@@ -118,12 +219,20 @@ def build(out_dir: Path, bbox=C.DEMO_BBOX, osm_file: Path | None = None) -> dict
         ox.settings.overpass_rate_limit = False
     pbox = padded_bbox(bbox)
 
-    G = _from_extract(ox, Path(osm_file), pbox, out_dir) if osm_file else _download(ox, pbox)
+    if osm_file:
+        G = _from_extract(ox, Path(osm_file), pbox, out_dir)
+    else:
+        G = _download(ox, pbox)
+        mark_directed_modes(G)
     G = ox.project_graph(G, to_crs=C.CRS_METRIC)
-    G = _undirected_largest(ox, G)
+    G = _largest(ox, G)
 
-    # Collapse parallel edges (keep the shortest) and drop self-loops.
+    # Collapse both directions and any parallel edges into one undirected edge (geometry of the shortest), drop
+    # self-loops, and remember which modes may use it: walking either way, driving per direction.
     best: dict[tuple, tuple] = {}
+    walk_ok: dict[tuple, bool] = {}
+    drive_ok: dict[tuple, bool] = {}          # keyed by the DIRECTED pair
+    kmh_of: dict[tuple, float] = {}
     for a, b, data in G.edges(data=True):
         if a == b:
             continue
@@ -131,6 +240,10 @@ def build(out_dir: Path, bbox=C.DEMO_BBOX, osm_file: Path | None = None) -> dict
         length = float(data.get("length", 0.0))
         if key not in best or length < best[key][0]:
             best[key] = (length, a, b, data)
+        walk_ok[key] = walk_ok.get(key, False) or str(data.get("wk_class", "1"))[0] == "1"
+        if _flag(data.get("wk_go", False)):
+            drive_ok[(a, b)] = True
+            kmh_of[key] = max(kmh_of.get(key, 0.0), _kmh(data.get("wk_kmh", FALLBACK_KMH)))
 
     used = sorted({x for k in best for x in k}, key=str)
     idx = {osm: i for i, osm in enumerate(used)}
@@ -139,7 +252,8 @@ def build(out_dir: Path, bbox=C.DEMO_BBOX, osm_file: Path | None = None) -> dict
     node_lat, node_lon = (np.asarray(t) for t in utm_to_latlon(node_x, node_y))
 
     u, v, lengths, names, geoms, coords = [], [], [], [], [], []
-    for length, a, b, data in best.values():
+    walk, drive_fwd, drive_rev, kmh = [], [], [], []
+    for key, (length, a, b, data) in best.items():
         ia, ib = idx[a], idx[b]
         geom = data.get("geometry")
         if geom is None:
@@ -157,8 +271,13 @@ def build(out_dir: Path, bbox=C.DEMO_BBOX, osm_file: Path | None = None) -> dict
         names.append(name if isinstance(name, str) else None)
         geoms.append(geom)
         coords.append(np.column_stack([lat, lon]))
+        walk.append(walk_ok[key])
+        drive_fwd.append(drive_ok.get((a, b), False))
+        drive_rev.append(drive_ok.get((b, a), False))
+        kmh.append(kmh_of.get(key, FALLBACK_KMH))
 
-    g = assemble_graph(node_lat, node_lon, node_x, node_y, u, v, lengths, names, geoms, coords, bbox=pbox)
+    g = assemble_graph(node_lat, node_lon, node_x, node_y, u, v, lengths, names, geoms, coords, bbox=pbox,
+                       edge_walk=walk, edge_drive_fwd=drive_fwd, edge_drive_rev=drive_rev, edge_drive_kmh=kmh)
     write_artifacts(g, out_dir, {
         "built_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "osmnx_version": ox.__version__,
@@ -166,4 +285,5 @@ def build(out_dir: Path, bbox=C.DEMO_BBOX, osm_file: Path | None = None) -> dict
         "osm_source": Path(osm_file).name if osm_file else "overpass",
     })
     return {"n_nodes": g.n_nodes, "n_edges": g.n_edges, "graph_hash": g.graph_hash,
+            "walk_edges": int(g.edge_walk.sum()), "drive_edges": int((g.edge_drive_fwd | g.edge_drive_rev).sum()),
             "seconds": round(time.time() - t0, 1)}

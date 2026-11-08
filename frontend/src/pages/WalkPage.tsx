@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { useMeta } from "../api/hooks";
-import type { AlertKind, FamilyDetail, Hazard, LatLon, RouteOption, WalkerUpdate } from "../api/types";
+import type { AlertKind, FamilyDetail, Hazard, LatLon, RouteOption, TravelMode, WalkerUpdate } from "../api/types";
 import { BannerStack, useBanners } from "../components/AlertCenter";
 import { MapView } from "../components/MapView";
 import { NavBar } from "../components/NavBar";
@@ -20,9 +20,20 @@ import { checkPin, hasPins } from "../walk/pins";
 
 const DRAFT_KEY = "waykin:route:draft";
 const WALK_M_PER_MIN = 80;
+
+/** The route's own average pace, so ETAs and the simulator suit walking or driving. */
+function paceOf(route: RouteOption): number {
+  return route.minutes > 0 && route.distance_m > 0 ? route.distance_m / route.minutes : WALK_M_PER_MIN;
+}
 const ROUTE_RESEND_EVERY = 10;
 
-type Draft = { route: RouteOption; destination: LatLon; originLabel?: string | null; destinationLabel?: string | null };
+type Draft = {
+  route: RouteOption;
+  destination: LatLon;
+  originLabel?: string | null;
+  destinationLabel?: string | null;
+  mode?: TravelMode;
+};
 type Share = { kind: "family"; fid: string } | { kind: "link" } | { kind: "nobody" };
 type Phase = "setup" | "starting" | "walking" | "ended";
 
@@ -117,7 +128,7 @@ export function WalkPage() {
     return {
       lat: p.lat, lon: p.lon, accuracy_m: p.accuracy_m, ts: p.ts,
       status: "walking",
-      eta_min: remainingMetres([p.lat, p.lon], r.geometry) / WALK_M_PER_MIN,
+      eta_min: remainingMetres([p.lat, p.lon], r.geometry) / paceOf(r),
       ...(withRoute ? { route: { route_id: r.route_id, label: r.label, geometry: r.geometry } } : {}),
       ...extra,
     };
@@ -128,7 +139,7 @@ export function WalkPage() {
     posRef.current = { lat: p.lat, lon: p.lon };
     setPosition(posRef.current);
     const r = routeRef.current!;
-    setEtaMin(remainingMetres([p.lat, p.lon], r.geometry) / WALK_M_PER_MIN);
+    setEtaMin(remainingMetres([p.lat, p.lon], r.geometry) / paceOf(r));
     const fired = monitor.current!.update({ lat: p.lat, lon: p.lon, ts: p.ts });
     const alert = pendingAlert.current ?? fired[0] ?? null;
     pendingAlert.current = null;
@@ -148,7 +159,7 @@ export function WalkPage() {
     if (rerouting.current || !here) return;
     rerouting.current = true;
     try {
-      const res = await api.reroute({ position: here, destination });
+      const res = await api.reroute({ position: here, destination, mode: draft?.mode ?? "walk" });
       const best = res.routes.find((r) => r.route_id === res.decision.recommended_route_id) ?? res.routes[0];
       routeRef.current = best;
       setRoute(best);
@@ -241,7 +252,7 @@ export function WalkPage() {
     watchHazards();
     setPhase("walking");
     if (source === "sim") {
-      sim.current = new SimGeo(r.geometry as [number, number][], { speedMultiplier: 5, intervalMs: 1000 });
+      sim.current = new SimGeo(r.geometry as [number, number][], { speedMultiplier: 5, intervalMs: 1000, metresPerMin: paceOf(r) });
       sim.current.start(onFix);
     } else {
       watchId.current = navigator.geolocation.watchPosition(

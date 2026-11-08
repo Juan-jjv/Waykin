@@ -14,10 +14,10 @@ AbstainReason = Literal["thin_data", "indistinguishable", "too_costly", "no_alte
 MESSAGES = {
     "thin_data": "Too few reports near these routes to tell them apart.",
     "indistinguishable": "The routes' reported-incident counts overlap too much to call one lower.",
-    "too_costly": "Routes with clearly fewer reports add more than 25% to your walk time.",
+    "too_costly": f"Routes with clearly fewer reports add more than {round(C.MAX_EXTRA_TIME * 100)}% to your travel time.",
     "no_alternative": "There is only one reasonable route for this trip.",
 }
-LABEL_TEXT = {"balanced": "Balanced", "lower_exposure": "Lower-exposure", "fastest": "Fastest", "uncapped": "Uncapped"}
+LABEL_TEXT = {"lower_exposure": "Lower-exposure", "fastest": "Fastest", "uncapped": "Uncapped"}
 
 
 @dataclass
@@ -53,7 +53,7 @@ def _draws_better(S: np.ndarray) -> np.ndarray:
 
 def _decide(S: np.ndarray, minutes_per_route: np.ndarray, observed_total: float,
             n_alternatives: int, has_uncapped: bool) -> tuple[str, str | None, int | None, np.ndarray]:
-    """Pure decision core on arrays.
+    """Pure decision core on arrays. Among qualifying routes it recommends the smallest detour.
 
     S: (n_routes, N) exposure per draw; row 0 = fastest, rows 1..n_alternatives = alternatives,
     last row = uncapped if has_uncapped. Returns (status, reason, recommended_index, draws_better).
@@ -88,10 +88,16 @@ def _route_sums(routes, X) -> np.ndarray:
 
 
 def _assess_one(cs, bundle, radius_m: int):
+    """`bundle` is an ExposureBundle (X per edge and draw) or anything with route_sums/observed_total, such as the
+    walking WalkPressure."""
     routes = _routes(cs)
-    S = _route_sums(routes, bundle.X[radius_m])
     union = np.unique(np.concatenate([np.asarray(r.edge_ids) for r in routes]))
-    observed_total = float(np.asarray(bundle.observed[radius_m])[union].sum())
+    if hasattr(bundle, "route_sums"):
+        S = bundle.route_sums(routes, radius_m)
+        observed_total = bundle.observed_total(union, radius_m)
+    else:
+        S = _route_sums(routes, bundle.X[radius_m])
+        observed_total = float(np.asarray(bundle.observed[radius_m])[union].sum())
     minutes = np.array([r.minutes for r in routes])
     status, reason, idx, better = _decide(S, minutes, observed_total, len(cs.alternatives), cs.uncapped is not None)
     return routes, S, status, reason, idx, better

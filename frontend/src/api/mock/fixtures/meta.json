@@ -19,7 +19,7 @@
   "thresholds": {
     "min_reduction": 0.15,
     "min_draw_share": 0.9,
-    "max_extra_time": 0.25
+    "max_extra_time": 0.4
   },
   "demo_mode": true,
   "demo_presets": [
@@ -39,5 +39,7 @@
       "destination": { "lat": 53.5165, "lon": -113.5065 },
       "expected": "abstain"
     }
-  ]
+  ],
+  "modes": ["walk"],
+  "severity": { "Person-directed": 3.0, "Property": 1.25, "Traffic": 1.0 }
 }

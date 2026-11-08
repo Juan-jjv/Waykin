@@ -5,9 +5,15 @@ presets:
   all: [assault, robbery, homicide, indecent_act, weapons, break_and_enter, theft, vehicle_theft, mischief, disorder]
   person_directed: [assault, robbery, homicide, indecent_act]   # a person is the direct victim
 active_preset: all                       # C2 decides. Only the active preset is built; changing it means rebuilding.
-# Catchment weight per category. A location's catchment radius is the base radius times the count-weighted mean
-# of its reports' weights, so more severe reports spread over more nearby streets. Changing these means rebuilding.
-severity: {homicide: 2.0, weapons: 1.75, assault: 1.5, robbery: 1.5, indecent_act: 1.25, break_and_enter: 1.0,
-           vehicle_theft: 1.0, theft: 0.75, mischief: 0.75, disorder: 0.75}
+# Severity weight per category, 1 (least serious) to 5 (most). Walking routes multiply each report by its weight
+# (walk_pressure.py), and the map shades each incident dot from light red (1) to dark red (5) by its most serious
+# report, so the colours show what the walking router weighs. Takes effect on the next server start.
+severity: {homicide: 5.0, weapons: 3.5, assault: 3.0, robbery: 3.0, indecent_act: 1.5, break_and_enter: 1.25,
+           vehicle_theft: 1.25, theft: 1.0, mischief: 1.0, disorder: 1.0}
+# Catchment weight per category, for the driving exposure build only. A location's catchment radius is the base
+# radius times the count-weighted mean of its reports' weights, so more severe reports spread over more nearby
+# streets. Changing these means rebuilding the exposure.
+catchment: {homicide: 2.0, weapons: 1.75, assault: 1.5, robbery: 1.5, indecent_act: 1.25, break_and_enter: 1.0,
+            vehicle_theft: 1.0, theft: 0.75, mischief: 0.75, disorder: 0.75}
 # Fixed split of each synthetic count across the categories above, in the same order. Synthetic data only.
 synthetic_weights: [0.12, 0.03, 0.01, 0.01, 0.03, 0.10, 0.35, 0.05, 0.15, 0.15]

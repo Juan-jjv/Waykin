@@ -4,12 +4,15 @@ import { NavBar } from "../components/NavBar";
 import { ApiError, TraceError } from "../api/client";
 import { insideBBox, type Place } from "../api/geocode";
 import { useIncidents, useMeta, usePlanRoutes } from "../api/hooks";
-import type { DemoPreset, LatLon, RouteOption } from "../api/types";
+import type { DemoPreset, LatLon, RouteOption, TravelMode } from "../api/types";
 import { IncidentLayer } from "../components/IncidentLayer";
+import { MapLegend } from "../components/MapLegend";
 import { MapFilters } from "../components/MapFilters";
 import { MapView } from "../components/MapView";
+import { ModePicker } from "../components/ModePicker";
 import { PeoplePins } from "../components/PeoplePins";
 import { PointMarkers, PointSearch } from "../components/PointPicker";
+import type { QuickPlace } from "../components/PlaceSearch";
 import { PresetPicker } from "../components/PresetPicker";
 import { FitRoutes, RouteLayer, SegmentFocus } from "../components/RouteLayer";
 import { RoutePanel, RouteSkeleton } from "../components/RoutePanel";
@@ -34,6 +37,7 @@ export function PlanPage() {
   const [focus, setFocus] = useState<{ token: number; geometry: number[][] } | null>(null);
   const [segmentRouteId, setSegmentRouteId] = useState<string | null>(null);
   const [walkNote, setWalkNote] = useState<string | null>(null);
+  const [mode, setMode] = useState<TravelMode>("walk");
   const plan = usePlanRoutes();
   const touchedOrigin = useRef(false);
   const navigate = useNavigate();
@@ -49,6 +53,23 @@ export function PlanPage() {
   const people = useMemo(() => (me ? demoPeople.data?.people ?? [] : []), [me, demoPeople.data]);
 
   const bbox = meta?.bbox;
+  // Ready-made choices for both the Start and End fields: this device's location, then the family members.
+  const placeChoices = useMemo<QuickPlace[]>(() => {
+    const here: QuickPlace = {
+      key: "here",
+      label: strings.yourLocation,
+      hint: strings.yourLocationHint,
+      pick: () => locate(bbox ?? []),
+    };
+    const family = people.map((person) => ({
+      key: `person-${person.account_id}`,
+      label: person.display_name,
+      hint: person.near ? strings.personNear(person.near) : undefined,
+      pick: () => ({ label: person.display_name, point: person.position }),
+    }));
+    return [here, ...family];
+  }, [bbox, people]);
+
   useEffect(() => {
     if (!bbox || !("geolocation" in navigator)) return;
     navigator.geolocation.getCurrentPosition(
@@ -126,6 +147,12 @@ export function PlanPage() {
     clearPlan();
   }
 
+  function changeMode(next: TravelMode) {
+    if (next === mode) return;
+    setMode(next);
+    clearPlan();
+  }
+
   function changeCategories(next: string[]) {
     setCategories(next);
     setIncidentsOn(next.length > 0);
@@ -142,11 +169,10 @@ export function PlanPage() {
     setFocus(null);
     setSegmentRouteId(null);
     plan.mutate(
-      { origin, destination },
+      { origin, destination, mode },
       {
         onSuccess: (data) => {
-          const fastest = data.routes.find((route) => route.label === "fastest");
-          setSelectedId(data.decision.recommended_route_id ?? fastest?.route_id ?? null);
+          setSelectedId(data.decision.recommended_route_id ?? defaultRouteId(data.routes, data.mode));
           setRouteToken((value) => value + 1);
         },
       },
@@ -165,7 +191,7 @@ export function PlanPage() {
   function startWalk(route: RouteOption) {
     if (!destination) return;
     try {
-      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ route, destination, originLabel, destinationLabel }));
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ route, destination, originLabel, destinationLabel, mode }));
       navigate("/walk");
     } catch {
       setWalkNote(strings.walkSaveFailed);
@@ -202,7 +228,10 @@ export function PlanPage() {
       <div className="map-stage">
         <MapView bbox={meta.bbox} showBBox={outside}>
           {showIncidents && incidents.data ? (
-            <IncidentLayer points={incidents.data.points} windowLabel={windowLabel} />
+            <>
+              <IncidentLayer points={incidents.data.points} windowLabel={windowLabel} severity={meta.severity ?? {}} />
+              <MapLegend />
+            </>
           ) : null}
           {plan.isSuccess && plan.data ? (
             <>
@@ -249,13 +278,16 @@ export function PlanPage() {
           onDestination={(place: Place) => updateDestination(place.point, place.label)}
           onSwap={swapPoints}
           onClear={clearPoints}
+          startChoices={placeChoices}
+          endChoices={placeChoices}
         />
+        <ModePicker modes={meta.modes} mode={mode} onChange={changeMode} />
         <button type="button" className="btn-primary find" onClick={findRoutes} disabled={!ready || plan.isPending}>
           {plan.isPending ? strings.finding : strings.findRoutes}
         </button>
         {showHint ? <p className="hint">{ready ? strings.findHint : strings.searchHint}</p> : null}
         {plan.isPending ? <RouteSkeleton /> : null}
-        {plan.isError ? <p className="notice">{routeErrorCopy(plan.error)}</p> : null}
+        {plan.isError ? <p className="notice">{routeErrorCopy(plan.error, mode)}</p> : null}
         {plan.isSuccess && plan.data ? (
           <RoutePanel
             response={plan.data}
@@ -265,6 +297,7 @@ export function PlanPage() {
             onShowSegments={showSegments}
             onStartWalk={startWalk}
             walkNote={walkNote}
+            mode={plan.data.mode}
           />
         ) : null}
       </aside>
@@ -272,11 +305,39 @@ export function PlanPage() {
   );
 }
 
-function routeErrorCopy(error: unknown): string {
+/** The device's position as a start, if the browser shares it and it's inside the map area. */
+function locate(bbox: number[]): Promise<Place> {
+  return new Promise((resolve, reject) => {
+    if (!("geolocation" in navigator)) {
+      reject(new Error(strings.locationUnavailable));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const point = { lat: position.coords.latitude, lon: position.coords.longitude };
+        if (bbox.length === 4 && !insideBBox(point, bbox)) reject(new Error(strings.locationOutside));
+        else resolve({ label: strings.yourLocation, point });
+      },
+      () => reject(new Error(strings.locationDenied)),
+      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 },
+    );
+  });
+}
+
+/** Without a recommendation: on foot, start from the option passing the fewest reports; by car, the fastest. */
+function defaultRouteId(routes: RouteOption[], mode: TravelMode): string | null {
+  if (routes.length === 0) return null;
+  if (mode === "walk") {
+    return routes.reduce((best, route) => (route.exposure.p50 < best.exposure.p50 ? route : best)).route_id;
+  }
+  return (routes.find((route) => route.label === "fastest") ?? routes[0]).route_id;
+}
+
+function routeErrorCopy(error: unknown, mode: TravelMode): string {
   if (error instanceof TraceError) return strings.streetsUnavailable;
   if (error instanceof ApiError) {
     if (error.code === "outside_area") return strings.outsideArea;
-    if (error.code === "no_path") return strings.noPath;
+    if (error.code === "no_path") return strings.noPath(mode);
   }
   return strings.cantReach;
 }

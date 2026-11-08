@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Query
 from waykin import constants as C
 from waykin import schemas as S
 from waykin.api.deps import demo_presets, get_state, mock
+from waykin.data.sources.base import category_config
 from waykin.provenance import build_provenance
 
 router = APIRouter()
@@ -27,7 +28,8 @@ def meta(state=Depends(get_state)) -> S.Meta:
     return S.Meta(provenance=build_provenance(state, s.DEFAULT_RADIUS_M), radii=list(b.radii),
                   default_radius_m=s.DEFAULT_RADIUS_M, bbox=list(state.graph.bbox), categories=list(b.categories),
                   category_preset=b.category_preset, relay_mode=s.relay_mode, n_draws=C.N_DRAWS,
-                  thresholds=_thresholds(), demo_mode=s.DEMO_MODE,
+                  thresholds=_thresholds(), demo_mode=s.DEMO_MODE, modes=state.graph.modes,
+                  severity={c: w for c, w in category_config().severity.items() if c in b.categories},
                   demo_presets=[S.DemoPreset.model_validate(p) for p in demo_presets()] if s.DEMO_MODE else [])
 
 

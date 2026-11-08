@@ -6,13 +6,14 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-RouteLabelOut = Literal["fastest", "balanced", "lower_exposure"]
+RouteLabelOut = Literal["fastest", "lower_exposure"]
 AbstainReason = Literal["thin_data", "indistinguishable", "too_costly", "no_alternative"]
 ErrorCode = Literal["outside_area", "no_path", "invalid_token", "expired", "not_found",
                     "rate_limited", "forbidden", "validation"]
 RelayMode = Literal["e2ee", "plaintext"]
 HazardKind = Literal["closure", "incident", "report"]
 Radius = Literal[50, 100, 200]
+TravelMode = Literal["walk", "drive"]
 
 
 class Request(BaseModel):
@@ -98,6 +99,8 @@ class Meta(BaseModel):
     thresholds: Thresholds
     demo_mode: bool
     demo_presets: list[DemoPreset]
+    modes: list[TravelMode] = ["walk"]       # travel modes the loaded graph can route
+    severity: dict[str, float] = {}          # category -> 1..5; walking weight and incident dot shade
 
 
 # ---------------------------------------------------------------- incidents
@@ -119,6 +122,7 @@ class RoutesRequest(Request):
     origin: LatLonIn
     destination: LatLonIn
     radius_m: Radius | None = None
+    mode: TravelMode = "walk"
 
 
 class RerouteRequest(Request):
@@ -126,6 +130,7 @@ class RerouteRequest(Request):
     position: LatLonIn
     destination: LatLonIn
     radius_m: Radius | None = None
+    mode: TravelMode = "walk"
 
 
 class TopSegment(BaseModel):
@@ -162,6 +167,7 @@ class Decision(BaseModel):
 
 
 class RoutesResponse(BaseModel):
+    mode: TravelMode = "walk"
     provenance: Provenance
     origin_snapped: LatLon
     destination_snapped: LatLon

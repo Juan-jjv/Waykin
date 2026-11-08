@@ -23,7 +23,7 @@ async def routes(req: S.RoutesRequest, state=Depends(get_state)) -> S.RoutesResp
         return _mock_routes(req.origin.lat)
     from waykin.routing import service
     radius = req.radius_m or state.settings.DEFAULT_RADIUS_M
-    return await run_in_threadpool(service.plan, state, req.origin, req.destination, radius)
+    return await run_in_threadpool(service.plan, state, req.origin, req.destination, radius, req.mode)
 
 
 @router.post("/routes/reroute", response_model=S.RoutesResponse)
@@ -32,4 +32,4 @@ async def reroute(req: S.RerouteRequest, state=Depends(get_state)) -> S.RoutesRe
         return S.RoutesResponse.model_validate(mock("routes_reroute"))
     from waykin.routing import service
     radius = req.radius_m or state.settings.DEFAULT_RADIUS_M
-    return await run_in_threadpool(service.plan, state, req.position, req.destination, radius)
+    return await run_in_threadpool(service.plan, state, req.position, req.destination, radius, req.mode)

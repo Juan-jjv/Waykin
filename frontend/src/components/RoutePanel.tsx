@@ -1,4 +1,4 @@
-import type { RouteOption, RoutesResponse } from "../api/types";
+import type { RouteOption, RoutesResponse, TravelMode } from "../api/types";
 import { routeLabelText, strings } from "../copy/strings";
 import { AbstainCard } from "./AbstainCard";
 import { RouteCard } from "./RouteCard";
@@ -11,6 +11,7 @@ export function RoutePanel({
   onShowSegments,
   onStartWalk,
   walkNote,
+  mode = "walk",
 }: {
   response: RoutesResponse;
   selectedId: string | null;
@@ -19,6 +20,7 @@ export function RoutePanel({
   onShowSegments: (route: RouteOption) => void;
   onStartWalk: (route: RouteOption) => void;
   walkNote: string | null;
+  mode?: TravelMode;
 }) {
   const { decision } = response;
   const recommended = response.routes.find((route) => route.route_id === decision.recommended_route_id);
@@ -31,7 +33,7 @@ export function RoutePanel({
           <p>{decision.message}</p>
         </header>
       ) : null}
-      {decision.status === "abstain" && decision.reason ? <AbstainCard reason={decision.reason} /> : null}
+      {decision.status === "abstain" && decision.reason ? <AbstainCard reason={decision.reason} maxExtra={decision.thresholds.max_extra_time} /> : null}
       {response.routes.map((route) => (
         <RouteCard
           key={route.route_id}
@@ -43,6 +45,8 @@ export function RoutePanel({
           onSelect={() => onSelect(route.route_id)}
           onShowSegments={() => onShowSegments(route)}
           onStartWalk={() => onStartWalk(route)}
+          startLabel={mode === "drive" ? strings.startDrive : strings.startWalk}
+          exposureNoun={mode === "walk" ? strings.walkExposureNoun : undefined}
         />
       ))}
       {walkNote ? (

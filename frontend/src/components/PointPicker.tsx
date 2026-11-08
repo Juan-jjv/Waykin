@@ -4,7 +4,7 @@ import type { Place } from "../api/geocode";
 import type { LatLon } from "../api/types";
 import { strings } from "../copy/strings";
 import { useWaykinMap } from "../map/context";
-import { PlaceSearch } from "./PlaceSearch";
+import { PlaceSearch, type QuickPlace } from "./PlaceSearch";
 
 interface PointMarkerProps {
   origin: LatLon | null;
@@ -99,6 +99,8 @@ export function PointSearch({
   onDestination,
   onSwap,
   onClear,
+  startChoices = [],
+  endChoices = [],
 }: {
   originLabel: string | null;
   destinationLabel: string | null;
@@ -109,12 +111,28 @@ export function PointSearch({
   onDestination: (place: Place) => void;
   onSwap: () => void;
   onClear: () => void;
+  startChoices?: QuickPlace[];
+  endChoices?: QuickPlace[];
 }) {
   return (
     <div className="point-block">
       <div className="points">
-        <PlaceSearch label={strings.start} placeholder={strings.searchStart} value={originLabel} bbox={bbox} onSelect={onOrigin} />
-        <PlaceSearch label={strings.end} placeholder={strings.searchEnd} value={destinationLabel} bbox={bbox} onSelect={onDestination} />
+        <PlaceSearch
+          label={strings.start}
+          placeholder={strings.searchStart}
+          value={originLabel}
+          bbox={bbox}
+          onSelect={onOrigin}
+          quick={startChoices}
+        />
+        <PlaceSearch
+          label={strings.end}
+          placeholder={strings.searchEnd}
+          value={destinationLabel}
+          bbox={bbox}
+          onSelect={onDestination}
+          quick={endChoices}
+        />
       </div>
       <div className="point-actions">
         <button type="button" className="btn-quiet" onClick={onSwap} disabled={!canSwap}>

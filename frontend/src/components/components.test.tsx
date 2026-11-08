@@ -9,6 +9,10 @@ import { abstainCopy, strings } from "../copy/strings";
 import { incidentRadius } from "./IncidentLayer";
 import { ProvenanceBanner } from "./ProvenanceBanner";
 import { RoutePanel } from "./RoutePanel";
+import {
+  SEVERITY_MAX, SEVERITY_MIN, SEVERITY_RAMP, severityColorExpression, severityOf, worstCategory,
+} from "../map/colors";
+import { abstainBody } from "../copy/strings";
 
 const prov: Provenance = {
   source: "synthetic", source_label: "Synthetic data (demo)", as_of: "2026-10-31", window_days: 7, radius_m: 100,
@@ -20,11 +24,12 @@ function routes(status: "recommend" | "abstain", reason: RoutesResponse["decisio
   const base = { geometry: [[53.5, -113.5], [53.51, -113.5]], edge_ids: [1], top_segments: [], explanation: "x",
     distance_m: 100, exposure: iv };
   return {
+    mode: "walk",
     provenance: prov, origin_snapped: { lat: 53.5, lon: -113.5 }, destination_snapped: { lat: 53.51, lon: -113.5 },
     blocked_edge_count: 0,
     routes: [
       { ...base, route_id: "f", label: "fastest", minutes: 10, extra_minutes: 0, exposure_diff_vs_fastest: null, draws_better: null },
-      { ...base, route_id: "b", label: "balanced", minutes: 11, extra_minutes: 1, exposure_diff_vs_fastest: { ...iv, p50: -1 }, draws_better: 471 },
+      { ...base, route_id: "b", label: "lower_exposure", minutes: 11, extra_minutes: 1, exposure_diff_vs_fastest: { ...iv, p50: -1 }, draws_better: 471 },
     ],
     decision: { status, recommended_route_id: status === "recommend" ? "b" : null, reason, message: "msg",
       radius_sensitive: null, radius_decisions: null, n_draws: 500,
@@ -37,6 +42,27 @@ const panel = (data: RoutesResponse, selectedId: string) => (
   <RoutePanel response={data} selectedId={selectedId} segmentRouteId={null} onSelect={noop}
     onShowSegments={noop} onStartWalk={noop} walkNote={null} />
 );
+
+describe("incident severity shades", () => {
+  const sev = { homicide: 5, assault: 3, indecent_act: 1.5, theft: 1 };
+  it("a dot takes the shade of its most serious report", () => {
+    expect(severityOf({ theft: 9, homicide: 1 }, sev)).toBe(5);
+    expect(severityOf({ indecent_act: 2 }, sev)).toBe(1.5);
+    expect(severityOf({ theft: 0, assault: 0 }, sev)).toBe(1);
+    expect(severityOf({ unknown: 3 }, {})).toBe(1);
+    expect(worstCategory({ theft: 4, assault: 1 }, sev)).toBe("assault");
+  });
+  it("the ramp runs light to dark with one stop per level", () => {
+    expect(SEVERITY_RAMP.light).toHaveLength(SEVERITY_MAX - SEVERITY_MIN + 1);
+    expect(severityColorExpression("light").slice(0, 5)).toEqual(["interpolate", ["linear"], ["get", "sev"], 1, "#fca5a5"]);
+  });
+});
+
+describe("route copy", () => {
+  it("abstain copy uses the server's time cap", () => {
+    expect(abstainBody("too_costly", 0.4)).toContain("more than 40% to your travel time");
+  });
+});
 
 describe("components", () => {
   it("incident dots grow with the count, up to a cap, and the text states counts", () => {
@@ -55,7 +81,7 @@ describe("components", () => {
 
   it("RoutePanel marks the recommendation and shows stability as a count", () => {
     render(panel(routes("recommend"), "b"));
-    expect(screen.getByText("Recommended: Balanced")).toBeTruthy();
+    expect(screen.getByText("Recommended: Lower-exposure")).toBeTruthy();
     expect(screen.getByText("Holds in 471 of 500 simulations")).toBeTruthy();
   });
 
