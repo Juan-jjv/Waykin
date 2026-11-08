@@ -7,3 +7,8 @@ export const ROUTE_COLORS: Record<RouteLabel, string> = {
 };
 
 export const SEGMENT_COLOR = "#d97706";
+
+export const INCIDENT_COLORS = {
+  light: { fill: "#dc2626", stroke: "#991b1b" },
+  dark: { fill: "#ef4444", stroke: "#fecaca" },
+};

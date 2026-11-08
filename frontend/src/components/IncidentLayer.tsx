@@ -3,6 +3,7 @@ import { Popup, type MapLayerMouseEvent } from "maplibre-gl";
 import type { FeatureCollection } from "geojson";
 import type { IncidentPoint } from "../api/types";
 import { strings } from "../copy/strings";
+import { INCIDENT_COLORS } from "../map/colors";
 import { useWaykinMap } from "../map/context";
 import { removeMapSource, setGeoJson, whenStyleReady } from "../map/geojson";
 import { useAppearance } from "../theme/appearance";
@@ -61,10 +62,10 @@ export function IncidentLayer({ points, windowLabel }: { points: IncidentPoint[]
           source: SOURCE,
           paint: {
             "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, ["*", ["get", "radius"], 0.3], 15, ["get", "radius"]],
-            "circle-color": appearance === "dark" ? "#a8a29e" : "#78716c",
-            "circle-opacity": 0.72,
+            "circle-color": INCIDENT_COLORS[appearance].fill,
+            "circle-opacity": 0.85,
             "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 10, 0.25, 14, 1],
-            "circle-stroke-color": appearance === "dark" ? "#f5f5f4" : "#44403c",
+            "circle-stroke-color": INCIDENT_COLORS[appearance].stroke,
           },
         });
       }
