@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     DATA_DIR: Path = Path("../data")
     LOAD_RADII: str = "100"
     DEFAULT_RADIUS_M: int = C.DEFAULT_RADIUS_M
-    DEMO_MODE: bool = False
+    DEMO_MODE: bool = True           # demo account, presets and admin-free hazard posting; DEMO_MODE=0 for a real deploy
     RELAY_PLAINTEXT: bool = False
     ADMIN_TOKEN: str = Field(default_factory=lambda: secrets.token_urlsafe(16))
     JOURNEY_TTL_MIN: int = C.JOURNEY_TTL_MIN_DEFAULT

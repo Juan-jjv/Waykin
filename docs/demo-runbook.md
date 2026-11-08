@@ -3,12 +3,12 @@
 _Owner: S2 (handed over by A4). One page._
 
 ## Before going on stage
-1. `make build-data` once (graph + synthetic exposure; EPS too if `data/raw/` has the snapshot).
-2. `make demo` builds the frontend and starts **one process** on :8000 with `DEMO_MODE=1`.
-   Add `EXPOSURE_SOURCE=eps` for real data. Add `RELAY_PLAINTEXT=1` **only** if the H38 encryption go/no-go failed (then drop the encryption claim).
-3. Open `http://localhost:8000`, and the family view on a second screen or phone (see `real-phone.md`).
-4. `curl -X POST localhost:8000/api/demo/reset` for a clean slate.
-5. `make smoke` in a second terminal: every line should be PASS, including `closure -> reroute`.
+1. Build the data once (next section), then `make demo` builds the frontend and starts **one process** on :8000.
+   Demo mode is on by default. Add `EXPOSURE_SOURCE=eps` for real data. Add `RELAY_PLAINTEXT=1` **only** if the
+   H38 encryption go/no-go failed (then drop the encryption claim).
+2. Open `http://localhost:8000`, and the family view on a second screen or phone (see `real-phone.md`).
+3. `curl -X POST localhost:8000/api/demo/reset` for a clean slate.
+4. `make smoke` in a second terminal: every line should be PASS, including `closure -> reroute`.
 
 ## Building the whole city with EPS reports
 `data/` is gitignored, so every machine builds its own. From `backend/`, with the venv active:
@@ -21,10 +21,11 @@ _Owner: S2 (handed over by A4). One page._
 4. `python -m scripts.data.build_exposure --source eps --radii 100` (about 5 min).
 5. Start the backend with `EXPOSURE_SOURCE=eps`.
 
-A new graph invalidates every exposure build, so after step 3 always redo step 4.
+A new graph invalidates every exposure build, so after step 3 always redo step 4. Routes now use the last 30 days of
+reports; an exposure built earlier (90 days) needs step 4 again.
 
 ## Demo account
-With `DEMO_MODE=1` the server creates (at startup, if missing) the account `demo`, password `waykin-demo`
+In demo mode (the default) the server creates (at startup, if missing) the account `demo`, password `waykin-demo`
 (override with `DEMO_PASSWORD`), and a "Demo family" with Maya, Sam and Priya at fixed, made-up spots
 (`backend/waykin/demo/people.json`). Sign in as `demo` and they appear as pins on the Plan map; tap one and choose
 Start here or End here. No other account ever gets those spots. The demo account can't delete itself or remove

@@ -7,14 +7,14 @@ from waykin.main import create_app
 
 @pytest.fixture
 def mock_client():
-    app = create_app(Settings(WAYKIN_MOCK=True, RELAY_PLAINTEXT=True, ADMIN_TOKEN="admin"))
+    app = create_app(Settings(WAYKIN_MOCK=True, RELAY_PLAINTEXT=True, ADMIN_TOKEN="admin", DEMO_MODE=False))
     with TestClient(app) as c:
         yield c
 
 
 @pytest.fixture
 def e2ee_client():
-    app = create_app(Settings(WAYKIN_MOCK=True, RELAY_PLAINTEXT=False, ADMIN_TOKEN="admin"))
+    app = create_app(Settings(WAYKIN_MOCK=True, RELAY_PLAINTEXT=False, ADMIN_TOKEN="admin", DEMO_MODE=False))
     with TestClient(app) as c:
         yield c
 
@@ -30,7 +30,7 @@ def real_state():
     from waykin.state import AppState
 
     g = make_grid_graph()
-    s = Settings(WAYKIN_MOCK=False, RELAY_PLAINTEXT=True, ADMIN_TOKEN="admin")
+    s = Settings(WAYKIN_MOCK=False, RELAY_PLAINTEXT=True, ADMIN_TOKEN="admin", DEMO_MODE=False)
     j = JourneyStore()
     return AppState(settings=s, graph=g, exposure=make_synthetic_bundle_for_tests(g),
                     hazards=HazardStore(g.n_edges, edge_mapper=lambda req: []), journeys=j,
