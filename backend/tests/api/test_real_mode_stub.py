@@ -11,8 +11,8 @@ def test_routes_through_service_plan(real_client, real_state):
     assert r.status_code == 200, r.text
     resp = S.RoutesResponse.model_validate(r.json())
     assert resp.provenance.source == "synthetic" and resp.routes[0].label == "fastest"
-    assert resp.provenance.window_days == C.WINDOW_DAYS
-    assert resp.provenance.units.endswith(f"last {C.WINDOW_DAYS} days")
+    assert resp.provenance.window_days == C.ROUTE_WINDOW_DAYS == 7
+    assert resp.provenance.units.endswith("last 7 days")
 
 
 def test_outside_area_error_has_no_coordinates(real_client):

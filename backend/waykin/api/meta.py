@@ -80,6 +80,7 @@ def incidents(radius_m: int | None = None, category: list[str] | None = Query(de
     if days and state.exposure.daily is not None:
         return S.IncidentsResponse(provenance=provenance.model_copy(update={"window_days": days}),
                                    points=_recent_points(state, days, category))
+    provenance = provenance.model_copy(update={"window_days": C.WINDOW_DAYS})
     pts = []
     for row in state.exposure.locations.itertuples(index=False):
         by = json.loads(row.counts_by_category) if row.counts_by_category else {}

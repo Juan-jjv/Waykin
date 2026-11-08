@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import json
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -28,6 +28,14 @@ def pivot_locations(table: pd.DataFrame) -> pd.DataFrame:
     df = pd.DataFrame(rows, columns=LOCATION_COLUMNS)
     df["count"] = df["count"].astype("int64")
     return df
+
+
+def recent_locations(locations: pd.DataFrame, daily: pd.DataFrame, as_of: date, days: int) -> pd.DataFrame:
+    """Locations counting only the reports from the last `days` days up to as_of (positions from `locations`)."""
+    recent = daily[pd.to_datetime(daily["date"]) > pd.Timestamp(as_of - timedelta(days=days))]
+    counts = recent.groupby(["location_id", "category"], as_index=False)["count"].sum()
+    where = locations[["location_id", "lat", "lon"]]
+    return pivot_locations(counts.merge(where, on="location_id", how="inner"))
 
 
 def row_counts(locations: pd.DataFrame, A: sp.csr_matrix) -> np.ndarray:
@@ -56,11 +64,13 @@ def save_radius(out_dir: Path, radius_m: int, A: sp.csr_matrix, X, mean, observe
 
 def make_bundle(locations: pd.DataFrame, graph, radii, *, source: str, source_label: str, as_of: date,
                 category_preset: str, categories: list[str], n_draws: int = C.N_DRAWS,
-                daily: pd.DataFrame | None = None, window_days: int = C.WINDOW_DAYS) -> ExposureBundle:
-    """An in-memory bundle: nothing is written to disk."""
+                daily: pd.DataFrame | None = None, window_days: int = C.WINDOW_DAYS,
+                route_locations: pd.DataFrame | None = None) -> ExposureBundle:
+    """An in-memory bundle: nothing is written to disk. Routes use `route_locations` when given, else `locations`."""
+    built_on = locations if route_locations is None else route_locations
     X, mean, observed = {}, {}, {}
     for r in radii:
-        _, X[r], mean[r], observed[r], _ = build_radius(locations, graph, int(r), n_draws=n_draws)
+        _, X[r], mean[r], observed[r], _ = build_radius(built_on, graph, int(r), n_draws=n_draws)
     return ExposureBundle(source=source, source_label=source_label, as_of=as_of, window_days=window_days,
                           category_preset=category_preset, categories=list(categories), radii=[int(r) for r in radii],
                           X=X, mean=mean, observed=observed, locations=locations, daily=daily)

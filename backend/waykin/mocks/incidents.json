@@ -5,7 +5,7 @@
   "as_of": "2026-10-31",
   "window_days": 30,
   "radius_m": 100,
-  "units": "reported incidents attributed to segments along this route, last 30 days",
+  "units": "reported incidents attributed to segments along this route, last 7 days",
   "disclaimer": "Counts of reported incidents near street segments, from public police data. They describe the past, not what will happen on your walk. Not for comparing neighbourhoods."
  },
  "points": [

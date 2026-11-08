@@ -4,6 +4,7 @@ import time
 import numpy as np
 import pytest
 
+from waykin import constants as C
 from waykin.data.bundle import ExposureBundle
 from waykin.data.stability import _decide, assess
 
@@ -55,7 +56,8 @@ def test_lower_route_above_time_cap_is_not_recommended(make_cs):
 
 def test_thin_data(make_cs):
     X = X_with([10, 10, 1, 1])
-    a = assess(make_cs(alts=[("lower_exposure", (2, 3), 11.0)]), bundle(X, observed=np.full(4, 0.5)), 100)
+    thin = np.full(4, 0.2 * C.MIN_REPORTS_FOR_SIGNAL)            # all four edges of both routes total below the minimum
+    a = assess(make_cs(alts=[("lower_exposure", (2, 3), 11.0)]), bundle(X, observed=thin), 100)
     assert (a.status, a.reason) == ("abstain", "thin_data")
 
 

@@ -21,8 +21,8 @@ _Owner: S2 (handed over by A4). One page._
 4. `python -m scripts.data.build_exposure --source eps --radii 100` (about 5 min).
 5. Start the backend with `EXPOSURE_SOURCE=eps`.
 
-A new graph invalidates every exposure build, so after step 3 always redo step 4. Routes now use the last 30 days of
-reports; an exposure built earlier (90 days) needs step 4 again.
+A new graph invalidates every exposure build, so after step 3 always redo step 4. Routes count the last 7 days of
+reports (the map still shows up to 30 days); an exposure built before this change needs step 4 again.
 
 ## Demo account
 In demo mode (the default) the server creates (at startup, if missing) the account `demo`, password `waykin-demo`

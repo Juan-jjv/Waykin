@@ -1,6 +1,7 @@
 import hashlib
 import json
 import re
+from datetime import timedelta
 from pathlib import Path
 
 import numpy as np
@@ -8,6 +9,7 @@ import pandas as pd
 import pytest
 
 from scripts.data.build_exposure import build
+from waykin import constants as C
 from waykin.data.bundle import load_exposure, make_synthetic_bundle_for_tests
 from waykin.routing.graph import load_graph
 from waykin.routing.testing import make_grid_graph, write_graph_artifacts
@@ -61,7 +63,16 @@ def test_load_round_trip_is_memory_mapped(built):
     b = load_exposure(built / "build" / "exposure", "synthetic", [100], graph_hash(built))
     assert b.radii == [100] and list(b.X) == [100] and isinstance(b.X[100], np.memmap)
     assert b.X[100].dtype == np.float32 and b.X[100].shape[1] == DRAWS
-    assert abs(float(b.observed[100].sum()) - int(b.locations["count"].sum())) < 1e-2
+
+
+def test_routes_count_only_the_route_window_and_the_map_keeps_the_month(built):
+    b = load_exposure(built / "build" / "exposure", "synthetic", [100], graph_hash(built))
+    assert b.window_days == C.ROUTE_WINDOW_DAYS
+    recent = b.daily[pd.to_datetime(b.daily["date"]) > pd.Timestamp(b.as_of - timedelta(days=C.ROUTE_WINDOW_DAYS))]
+    assert 0 < int(recent["count"].sum()) < int(b.locations["count"].sum())
+    assert abs(float(b.observed[100].sum()) - int(recent["count"].sum())) < 1e-2
+    oldest = pd.to_datetime(b.daily["date"]).min()
+    assert oldest <= pd.Timestamp(b.as_of - timedelta(days=C.ROUTE_WINDOW_DAYS + 7))
 
 
 def test_wrong_graph_hash_is_refused(built):

@@ -54,7 +54,8 @@ def load_exposure(build_dir: Path, source: str, radii: list[int], expected_graph
 
 def make_synthetic_bundle_for_tests(graph, radii=(100,)) -> ExposureBundle:
     """In-memory, deterministic, no files: the real pipeline on any Graph."""
-    from waykin.data.pipeline import make_bundle, pivot_locations
+    from waykin import constants as C
+    from waykin.data.pipeline import make_bundle, pivot_locations, recent_locations
     from waykin.data.sources.base import category_config
     from waykin.data.sources.synthetic import SYNTHETIC_AS_OF, SYNTHETIC_LABEL, SyntheticSource
 
@@ -62,6 +63,8 @@ def make_synthetic_bundle_for_tests(graph, radii=(100,)) -> ExposureBundle:
     bbox = (float(graph.node_lon.min()), float(graph.node_lat.min()), float(graph.node_lon.max()), float(graph.node_lat.max()))
     source = SyntheticSource(Path("."), graph=graph)
     locations = pivot_locations(source.load(bbox, cfg.active))
+    daily = source.daily(bbox, cfg.active)
     return make_bundle(locations, graph, radii, source="synthetic", source_label=SYNTHETIC_LABEL, as_of=SYNTHETIC_AS_OF,
-                       category_preset=cfg.active_preset, categories=cfg.categories,
-                       daily=source.daily(bbox, cfg.active))
+                       category_preset=cfg.active_preset, categories=cfg.categories, daily=daily,
+                       window_days=C.ROUTE_WINDOW_DAYS,
+                       route_locations=recent_locations(locations, daily, SYNTHETIC_AS_OF, C.ROUTE_WINDOW_DAYS))

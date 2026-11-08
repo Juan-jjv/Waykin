@@ -1,9 +1,11 @@
 import time
+from datetime import timedelta
 
 import numpy as np
 import pytest
 import scipy.sparse as sp
 
+from waykin import constants as C
 from waykin.data.bundle import make_synthetic_bundle_for_tests
 from waykin.data.montecarlo import simulate
 
@@ -63,4 +65,7 @@ def test_synthetic_bundle_is_deterministic(grid):
     assert b1.X[100].shape == (grid.n_edges, 500)
     assert b1.locations["count"].min() >= 1
     assert set(b1.locations.columns) == {"location_id", "lat", "lon", "count", "counts_by_category"}
-    assert abs(b1.observed[100].sum() - b1.locations["count"].sum()) < 1e-3
+    d = b1.daily
+    recent = d[d["date"] > b1.as_of - timedelta(days=C.ROUTE_WINDOW_DAYS)]["count"].sum()
+    assert 0 < recent < b1.locations["count"].sum()
+    assert abs(b1.observed[100].sum() - recent) < 1e-3

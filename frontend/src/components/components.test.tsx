@@ -11,8 +11,8 @@ import { ProvenanceBanner } from "./ProvenanceBanner";
 import { RoutePanel } from "./RoutePanel";
 
 const prov: Provenance = {
-  source: "synthetic", source_label: "Synthetic data (demo)", as_of: "2026-10-31", window_days: 30, radius_m: 100,
-  units: "reported incidents attributed to segments along this route, last 30 days", disclaimer: "Counts of reported incidents.",
+  source: "synthetic", source_label: "Synthetic data (demo)", as_of: "2026-10-31", window_days: 7, radius_m: 100,
+  units: "reported incidents attributed to segments along this route, last 7 days", disclaimer: "Counts of reported incidents.",
 };
 
 function routes(status: "recommend" | "abstain", reason: RoutesResponse["decision"]["reason"] = null): RoutesResponse {

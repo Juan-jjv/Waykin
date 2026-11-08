@@ -2,6 +2,7 @@
 
 Reads the graph (never rebuilds it), loads and validates the source table, pivots it to locations, then for each
 radius builds A (with prior nodes), simulates X and saves everything. Prints a summary but never coordinates.
+locations.parquet and daily.parquet hold the map's WINDOW_DAYS; A and X count only the ROUTE_WINDOW_DAYS.
 """
 from __future__ import annotations
 
@@ -13,7 +14,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from waykin import constants as C
-from waykin.data.pipeline import build_radius, pivot_locations, save_radius
+from waykin.data.pipeline import build_radius, pivot_locations, recent_locations, save_radius
 from waykin.data.sources.base import category_config, get_source, validate_source_table
 from waykin.routing.graph import load_graph
 
@@ -37,24 +38,31 @@ def build(data_dir: Path, source_name: str, radii: list[int], n_draws: int = C.N
     print(f"{source.label}: {len(locations)} published locations, {int(locations['count'].sum())} reports, "
           f"preset '{cfg.active_preset}'")
 
+    daily = source.daily(bbox, cfg.active)
+    route_locations = recent_locations(locations, daily, source.as_of(), C.ROUTE_WINDOW_DAYS)
+    if route_locations.empty:
+        raise ValueError(f"{source.label}: no reports in the {C.ROUTE_WINDOW_PHRASE} to route on")
+    print(f"routes use the {C.ROUTE_WINDOW_PHRASE}: {len(route_locations)} locations, "
+          f"{int(route_locations['count'].sum())} reports")
+
     out = data_dir / "build" / "exposure" / source_name
     out.mkdir(parents=True, exist_ok=True)
     (out / "manifest.json").unlink(missing_ok=True)   # a half-finished rebuild must not load as a good one
 
     allocation = {}
     for r in radii:
-        A, X, mean, observed, stats = build_radius(locations, graph, r, n_draws=n_draws)
+        A, X, mean, observed, stats = build_radius(route_locations, graph, r, n_draws=n_draws)
         save_radius(out, r, A, X, mean, observed)
         allocation[str(r)] = stats
         print(f"  r={r} m: {stats['n_prior']} prior nodes, {stats['nnz']} nonzeros, "
               f"{stats['mean_edges_per_location']} edges/location, fallback {100 * stats['fallback_share']:.1f}%")
 
     locations.to_parquet(out / "locations.parquet", index=False)
-    source.daily(bbox, cfg.active).to_parquet(out / "daily.parquet", index=False)
+    daily.to_parquet(out / "daily.parquet", index=False)
     last = allocation[str(radii[-1])]
     manifest = {
         "source": source_name, "source_label": source.label, "as_of": source.as_of().isoformat(),
-        "window_days": C.WINDOW_DAYS, "radii": sorted(radii), "n_draws": n_draws, "seed": C.SEED,
+        "window_days": C.ROUTE_WINDOW_DAYS, "map_window_days": C.WINDOW_DAYS, "radii": sorted(radii), "n_draws": n_draws, "seed": C.SEED,
         "kappa": C.DIRICHLET_KAPPA, "prior_strength": C.PRIOR_STRENGTH,
         "n_published": last["n_published"], "n_prior": last["n_prior"], "graph_hash": graph.graph_hash,
         "category_preset": cfg.active_preset, "categories": cfg.categories, "allocation": allocation,
