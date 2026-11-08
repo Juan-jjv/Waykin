@@ -22,7 +22,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-build = ["osmnx>=1.9", "networkx>=3.2"]
+build = ["osmnx>=1.9", "networkx>=3.2", "osmium>=4"]
 dev = ["pytest>=8", "httpx>=0.27", "ruff>=0.4", "cryptography>=42"]
 
 [tool.setuptools.packages.find]

@@ -24,6 +24,7 @@ class ExposureBundle:
     mean: dict[int, np.ndarray]            # radius -> (E,)
     observed: dict[int, np.ndarray]        # radius -> (E,)
     locations: pd.DataFrame                # published only: location_id, lat, lon, count, counts_by_category
+    daily: pd.DataFrame | None = None      # location_id, date, category, count; None for builds made before it existed
 
 
 def load_exposure(build_dir: Path, source: str, radii: list[int], expected_graph_hash: str) -> ExposureBundle:
@@ -47,6 +48,7 @@ def load_exposure(build_dir: Path, source: str, radii: list[int], expected_graph
         mean={r: np.load(d / f"mean_r{r}.npy") for r in radii},
         observed={r: np.load(d / f"observed_r{r}.npy") for r in radii},
         locations=pd.read_parquet(d / "locations.parquet"),
+        daily=pd.read_parquet(d / "daily.parquet") if (d / "daily.parquet").exists() else None,
     )
 
 
@@ -58,6 +60,8 @@ def make_synthetic_bundle_for_tests(graph, radii=(100,)) -> ExposureBundle:
 
     cfg = category_config()
     bbox = (float(graph.node_lon.min()), float(graph.node_lat.min()), float(graph.node_lon.max()), float(graph.node_lat.max()))
-    locations = pivot_locations(SyntheticSource(Path("."), graph=graph).load(bbox, cfg.active))
+    source = SyntheticSource(Path("."), graph=graph)
+    locations = pivot_locations(source.load(bbox, cfg.active))
     return make_bundle(locations, graph, radii, source="synthetic", source_label=SYNTHETIC_LABEL, as_of=SYNTHETIC_AS_OF,
-                       category_preset=cfg.active_preset, categories=cfg.categories)
+                       category_preset=cfg.active_preset, categories=cfg.categories,
+                       daily=source.daily(bbox, cfg.active))

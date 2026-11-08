@@ -8,7 +8,7 @@ export function AppearanceButton() {
   return (
     <button
       type="button"
-      className="appearance-btn"
+      className="map-btn appearance-btn"
       onClick={toggle}
       aria-label={label}
       aria-pressed={appearance === "dark"}

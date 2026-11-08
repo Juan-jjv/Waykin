@@ -1,8 +1,8 @@
 import numpy as np
 
 CRS_METRIC = "EPSG:32612"                      # UTM 12N (Edmonton)
-DEMO_BBOX = (-113.535, 53.510, -113.480, 53.530)  # (west, south, east, north): U of A + Old Strathcona.
-                                               # The team lead may change it before the H12 graph build. Never after.
+DEMO_BBOX = (-113.715, 53.335, -113.270, 53.720)  # (west, south, east, north): the City of Edmonton.
+                                               # Changing it means rebuilding the graph and the exposure.
 GRAPH_PAD_M = 300.0                            # the graph AND the incidents are loaded for DEMO_BBOX padded by this
 WALK_SPEED_M_PER_MIN = 80.0                    # 4.8 km/h
 MIN_EDGE_MINUTES = 1e-3                        # no zero weights in csgraph

@@ -50,6 +50,7 @@ def build(data_dir: Path, source_name: str, radii: list[int], n_draws: int = C.N
               f"{stats['mean_edges_per_location']} edges/location, fallback {100 * stats['fallback_share']:.1f}%")
 
     locations.to_parquet(out / "locations.parquet", index=False)
+    source.daily(bbox, cfg.active).to_parquet(out / "daily.parquet", index=False)
     last = allocation[str(radii[-1])]
     manifest = {
         "source": source_name, "source_label": source.label, "as_of": source.as_of().isoformat(),

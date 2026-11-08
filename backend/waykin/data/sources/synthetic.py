@@ -8,20 +8,27 @@ import numpy as np
 import pandas as pd
 
 from waykin import constants as C
-from waykin.data.sources.base import SOURCE_COLUMNS, category_config
+from waykin.data.sources.base import DAILY_COLUMNS, SOURCE_COLUMNS, category_config
 
 SYNTHETIC_LABEL = "Synthetic data (demo)"
 SYNTHETIC_AS_OF = date(2026, 10, 31)
 N_HOTSPOTS = 5
+KM2_PER_HOTSPOT = 4.0                  # bigger areas get more hotspots, so a whole city isn't five blobs
+_CHUNK = 20_000
 
 
 def synthetic_counts(node_x: np.ndarray, node_y: np.ndarray, rng: np.random.Generator) -> np.ndarray:
     """90-day counts per node: rate_i = 0.05 + Σ_h a_h·exp(-d²/2σ_h²), count ~ Poisson(rate)."""
-    hot = rng.choice(len(node_x), size=min(N_HOTSPOTS, len(node_x)), replace=False)
+    area_km2 = float(np.ptp(node_x) * np.ptp(node_y)) / 1e6 if len(node_x) else 0.0
+    n_hot = max(N_HOTSPOTS, round(area_km2 / KM2_PER_HOTSPOT))
+    hot = rng.choice(len(node_x), size=min(n_hot, len(node_x)), replace=False)
     sigma = rng.uniform(150.0, 400.0, len(hot))
     amp = rng.uniform(2.0, 8.0, len(hot))
-    d2 = (node_x[:, None] - node_x[hot][None, :]) ** 2 + (node_y[:, None] - node_y[hot][None, :]) ** 2
-    rate = 0.05 + (amp[None, :] * np.exp(-d2 / (2.0 * sigma[None, :] ** 2))).sum(axis=1)
+    rate = np.empty(len(node_x))
+    for i in range(0, len(node_x), _CHUNK):
+        x, y = node_x[i:i + _CHUNK], node_y[i:i + _CHUNK]
+        d2 = (x[:, None] - node_x[hot][None, :]) ** 2 + (y[:, None] - node_y[hot][None, :]) ** 2
+        rate[i:i + _CHUNK] = 0.05 + (amp[None, :] * np.exp(-d2 / (2.0 * sigma[None, :] ** 2))).sum(axis=1)
     return rng.poisson(rate)
 
 
@@ -70,3 +77,19 @@ class SyntheticSource:
         df = pd.DataFrame(rows, columns=SOURCE_COLUMNS)
         df["count"] = df["count"].astype("int64")
         return df
+
+    def daily(self, bbox, categories: list[str] | None) -> pd.DataFrame:
+        """Each report of `load` gets a uniformly random day in the window."""
+        table = self.load(bbox, categories)
+        rng = np.random.default_rng([C.SEED, 2])
+        report = np.repeat(np.arange(len(table)), table["count"].to_numpy())
+        age = rng.integers(0, C.WINDOW_DAYS, size=len(report))
+        days = pd.DataFrame({"row": report, "age": age}).value_counts().reset_index(name="count")
+        end = self.as_of()
+        df = pd.DataFrame({
+            "location_id": table["location_id"].to_numpy()[days["row"]],
+            "date": [end - timedelta(days=int(a)) for a in days["age"]],
+            "category": table["category"].to_numpy()[days["row"]],
+            "count": days["count"].astype("int64").to_numpy(),
+        })
+        return df.sort_values(["location_id", "date", "category"]).reset_index(drop=True)[DAILY_COLUMNS]

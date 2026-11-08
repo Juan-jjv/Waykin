@@ -42,6 +42,12 @@ def test_incidents_category_filter(mock_client):
     assert all(set(p) == {"location_id", "lat", "lon", "count", "by_category"} for p in all_pts)
 
 
+def test_incidents_date_window_narrows_the_points(mock_client):
+    all_pts = mock_client.get("/api/incidents").json()["points"]
+    week = mock_client.get("/api/incidents", params={"days": 7}).json()
+    assert week["provenance"]["window_days"] == 7 and len(week["points"]) < len(all_pts)
+
+
 def test_hazard_fixture_overlaps_a_fixture_route(mock_client):
     from waykin.api.deps import mock
     hz = set(mock("hazard_closure")["edge_ids"])

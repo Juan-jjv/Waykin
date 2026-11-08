@@ -88,7 +88,7 @@ class Graph:
 
     def snap(self, lat: float, lon: float) -> tuple[int, float]:
         """(node_id, distance_m). Never puts coordinates in the exception message."""
-        w, s, e, n = C.DEMO_BBOX
+        w, s, e, n = self.bbox
         if not (s <= lat <= n and w <= lon <= e):
             raise OutsideAreaError("point is outside the demo area")
         if self._kdtree is None:

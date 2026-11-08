@@ -78,7 +78,7 @@ button { font: inherit; }
 .map-frame { position: relative; }
 
 .maplibregl-ctrl-top-left {
-  top: 12px;
+  top: 64px;
   left: 12px;
 }
 
@@ -122,11 +122,17 @@ button { font: inherit; }
   right: 8px;
 }
 
-.appearance-btn {
+.appearance-btn,
+.map-filters {
   position: absolute;
   z-index: 1000;
   top: 12px;
-  right: 12px;
+}
+
+.appearance-btn { right: 12px; }
+.map-filters { left: 12px; }
+
+.map-btn {
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -143,18 +149,88 @@ button { font: inherit; }
   transition: transform 180ms ease, background 200ms ease, color 200ms ease;
 }
 
-[data-theme="dark"] .appearance-btn {
+[data-theme="dark"] .map-btn {
   background: rgba(44, 44, 46, 0.86);
   border-color: rgba(255, 255, 255, 0.22);
   box-shadow: 0 1px 6px rgba(0, 0, 0, 0.5), 0 0 0 0.5px rgba(255, 255, 255, 0.16);
 }
 
-.appearance-btn:active { transform: scale(0.92); }
+.map-btn:active { transform: scale(0.92); }
 
-.appearance-btn:focus-visible {
+.map-btn:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
+
+.filter-btn svg { width: 22px; height: 22px; }
+.filter-btn.off { color: var(--text-secondary); }
+.filter-btn[aria-expanded="true"] { background: var(--glass-text); color: var(--bg); }
+
+.filter-panel {
+  position: absolute;
+  top: 0;
+  left: 54px;
+  width: min(320px, calc(100vw - 90px));
+  max-height: min(70vh, 460px);
+  overflow-y: auto;
+  padding: 14px;
+  border-radius: 18px;
+  border: 0.5px solid var(--glass-border);
+  background: var(--glass);
+  color: var(--glass-text);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  box-shadow: var(--shadow);
+  transform-origin: top left;
+  animation: panel-in 160ms ease-out;
+}
+
+@keyframes panel-in {
+  from { opacity: 0; transform: scale(0.96) translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+
+.filter-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.select-wrap { position: relative; }
+
+.select-wrap::after {
+  content: "";
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-right: 1.75px solid currentColor;
+  border-bottom: 1.75px solid currentColor;
+  color: var(--text);
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
+}
+
+.select-wrap select {
+  appearance: none;
+  padding: 7px 30px 7px 12px;
+  border: none;
+  border-radius: 10px;
+  background: var(--fill);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.select-wrap select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.filter-panel .chips { margin-top: 12px; }
+.filter-note { margin: 12px 0 0; color: var(--text-secondary); font-size: 11px; line-height: 1.35; }
 
 .appearance-icons {
   position: relative;
@@ -284,8 +360,7 @@ button { font: inherit; }
 .preset,
 .points,
 .route-card,
-.find,
-.incident-controls {
+.find {
   scroll-margin-top: 92px;
 }
 
@@ -392,8 +467,6 @@ button { font: inherit; }
   gap: 8px;
   margin-top: 8px;
 }
-
-.incident-controls { margin-top: 16px; }
 
 .row-between {
   display: flex;
@@ -649,7 +722,8 @@ button { font: inherit; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .appearance-btn,
+  .map-btn,
+  .filter-panel,
   .appearance-icons svg,
   .switch-knob,
   .sk {

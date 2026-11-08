@@ -11,11 +11,11 @@ const incidentPoints = incidentsJson.points as IncidentPoint[];
 export const mockApi = {
   meta: async (): Promise<Meta> => clone(metaFixture),
 
-  incidents: async (radius_m: number, categories: string[]): Promise<IncidentsResponse> => {
+  incidents: async (radius_m: number, categories: string[], days: number): Promise<IncidentsResponse> => {
     const meta = clone(metaFixture);
     return {
-      provenance: { ...meta.provenance, radius_m },
-      points: filterPoints(incidentPoints, categories),
+      provenance: { ...meta.provenance, radius_m, window_days: days },
+      points: filterPoints(incidentPoints, categories).filter((point) => mockAgeDays(point.location_id) < days),
     };
   },
 
@@ -43,6 +43,13 @@ function filterPoints(points: IncidentPoint[], categories: string[]): IncidentPo
     if (count <= 0) return [];
     return [{ ...point, count, by_category: byCategory }];
   });
+}
+
+/** The fixture has no dates, so each point gets a fixed made-up age for the date filter. */
+function mockAgeDays(id: string): number {
+  let hash = 0;
+  for (const char of id) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  return hash % 90;
 }
 
 function isCoded(error: unknown): error is { code: "outside_area" | "no_path" } {

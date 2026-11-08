@@ -3,8 +3,8 @@ import { ApiError, TraceError } from "../api/client";
 import { insideBBox, type Place } from "../api/geocode";
 import { useIncidents, useMeta, usePlanRoutes } from "../api/hooks";
 import type { DemoPreset, LatLon, RouteOption } from "../api/types";
-import { CategoryFilter } from "../components/CategoryFilter";
-import { IncidentLayer, IncidentToggle } from "../components/IncidentLayer";
+import { IncidentLayer } from "../components/IncidentLayer";
+import { MapFilters } from "../components/MapFilters";
 import { MapView } from "../components/MapView";
 import { PointMarkers, PointSearch } from "../components/PointPicker";
 import { PresetPicker } from "../components/PresetPicker";
@@ -23,6 +23,7 @@ export function PlanPage() {
   const [destinationLabel, setDestinationLabel] = useState<string | null>(null);
   const [categories, setCategories] = useState<string[] | null>(null);
   const [incidentsOn, setIncidentsOn] = useState(true);
+  const [days, setDays] = useState(30);
   const [presetId, setPresetId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [routeToken, setRouteToken] = useState(0);
@@ -35,7 +36,8 @@ export function PlanPage() {
   const radius = meta?.default_radius_m ?? 100;
   const activeCategories = categories ?? meta?.categories ?? [];
   const showIncidents = incidentsOn && activeCategories.length > 0;
-  const incidents = useIncidents(radius, activeCategories, Boolean(meta) && showIncidents);
+  const incidents = useIncidents(radius, activeCategories, days, Boolean(meta) && showIncidents);
+  const windowLabel = strings.dateWindows.find((window) => window.days === days)?.label ?? "";
 
   const bbox = meta?.bbox;
   useEffect(() => {
@@ -190,7 +192,9 @@ export function PlanPage() {
     <div className="app-shell">
       <div className="map-stage">
         <MapView bbox={meta.bbox} showBBox={outside}>
-          {showIncidents && incidents.data ? <IncidentLayer points={incidents.data.points} /> : null}
+          {showIncidents && incidents.data ? (
+            <IncidentLayer points={incidents.data.points} windowLabel={windowLabel} />
+          ) : null}
           {plan.isSuccess && plan.data ? (
             <>
               <RouteLayer routes={plan.data.routes} selectedId={selectedId} onSelect={setSelectedId} />
@@ -205,6 +209,16 @@ export function PlanPage() {
             onDestination={(point) => updateDestination(point, strings.droppedPin)}
           />
         </MapView>
+        <MapFilters
+          incidentsOn={showIncidents}
+          onIncidents={toggleIncidents}
+          days={days}
+          onDays={setDays}
+          categories={meta.categories}
+          selected={activeCategories}
+          onCategories={changeCategories}
+          asOf={meta.provenance.as_of}
+        />
       </div>
       <aside className="sheet">
         <header className="sheet-head">
@@ -225,10 +239,6 @@ export function PlanPage() {
           onSwap={swapPoints}
           onClear={clearPoints}
         />
-        <section className="incident-controls">
-          <IncidentToggle on={showIncidents} onChange={toggleIncidents} />
-          <CategoryFilter categories={meta.categories} selected={activeCategories} onChange={changeCategories} />
-        </section>
         <button type="button" className="btn-primary find" onClick={findRoutes} disabled={!ready || plan.isPending}>
           {plan.isPending ? strings.finding : strings.findRoutes}
         </button>

@@ -751,6 +751,7 @@ export interface operations {
             query?: {
                 radius_m?: number | null;
                 category?: string[] | null;
+                days?: number | null;
             };
             header?: never;
             path?: never;

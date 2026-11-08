@@ -9,7 +9,8 @@ import yaml
 from pyproj import Transformer
 
 from waykin.data.pipeline import pivot_locations
-from waykin.data.sources.base import DATA_PKG, SOURCE_COLUMNS, category_config, get_source, validate_source_table
+from waykin.data.sources.base import (DAILY_COLUMNS, DATA_PKG, SOURCE_COLUMNS, category_config, get_source,
+                                      validate_source_table)
 from waykin.data.sources.eps import EpsConfigError, EpsSource
 from waykin.data.sources.synthetic import SyntheticSource
 
@@ -143,6 +144,26 @@ def test_eps_aggregates_filters_and_drops_free_text(tmp_path):
     assert src.as_of() == AS_OF
     assert dict(zip(df["category"], df["count"])) == {"assault": 2, "theft": 1}
     assert df["location_id"].nunique() == 1 and df["location_id"].iloc[0].startswith("eps-")
+
+
+def test_eps_daily_splits_the_same_reports_by_day(tmp_path):
+    src = eps_source(tmp_path)
+    daily = src.daily(BBOX, None)
+    assert list(daily.columns) == DAILY_COLUMNS and "Fake" not in daily.to_csv()
+    assert daily["count"].sum() == src.load(BBOX, None)["count"].sum()
+    assert set(daily["date"]) == {AS_OF, AS_OF - timedelta(days=5), AS_OF - timedelta(days=89)}
+
+
+def test_synthetic_daily_matches_load_and_stays_in_the_window(grid):
+    src = SyntheticSource(".", graph=grid)
+    bbox = graph_bbox(grid)
+    table, daily = src.load(bbox, None), src.daily(bbox, None)
+    assert list(daily.columns) == DAILY_COLUMNS
+    totals = daily.groupby(["location_id", "category"])["count"].sum()
+    assert totals.to_dict() == table.set_index(["location_id", "category"])["count"].to_dict()
+    end = src.as_of()
+    assert daily["date"].max() <= end and daily["date"].min() > end - timedelta(days=90)
+    assert daily.equals(src.daily(bbox, None))
 
 
 def test_eps_keeps_points_as_published(tmp_path):

@@ -10,6 +10,19 @@ _Owner: S2 (handed over by A4). One page._
 4. `curl -X POST localhost:8000/api/demo/reset` for a clean slate.
 5. `make smoke` in a second terminal: every line should be PASS, including `closure -> reroute`.
 
+## Building the whole city with EPS reports
+`data/` is gitignored, so every machine builds its own. From `backend/`, with the venv active:
+
+1. `python -m scripts.data.fetch_eps` pulls the last year of EPS occurrences into `data/raw/eps/eps_occurrences.geojson`.
+2. Download the Alberta extract (about 340 MB) from Geofabrik into `data/raw/osm/`:
+   `https://download.geofabrik.de/north-america/canada/alberta-latest.osm.pbf`
+3. `python -m scripts.routing.build_graph --osm-file ../data/raw/osm/alberta-latest.osm.pbf` (about 5 min).
+   Without `--osm-file` it asks Overpass, which often refuses a request this big.
+4. `python -m scripts.data.build_exposure --source eps --radii 100` (about 5 min).
+5. Start the backend with `EXPOSURE_SOURCE=eps`.
+
+A new graph invalidates every exposure build, so after step 3 always redo step 4.
+
 ## Presets
 Real-mode presets live in `backend/waykin/demo/presets.json` (empty until H24, when real routes work).
 Each entry is a `DemoPreset` plus, for the `reroute` preset, a `hazard` the API never exposes:

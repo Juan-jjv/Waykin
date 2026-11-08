@@ -24,3 +24,13 @@ def test_meta_and_incidents_from_bundle(real_client, real_state):
     assert m["radii"] == [100] and m["provenance"]["source_label"] == "Synthetic data (demo)"
     pts = real_client.get("/api/incidents").json()["points"]
     assert len(pts) == len(real_state.exposure.locations)
+
+
+def test_incidents_date_window(real_client, real_state):
+    full = real_client.get("/api/incidents", params={"days": 90}).json()
+    week = real_client.get("/api/incidents", params={"days": 7, "category": "assault"}).json()
+    assert full["provenance"]["window_days"] == 90 and week["provenance"]["window_days"] == 7
+    assert sum(p["count"] for p in full["points"]) == int(real_state.exposure.locations["count"].sum())
+    assert 0 < sum(p["count"] for p in week["points"]) < sum(p["count"] for p in full["points"])
+    assert all(set(p["by_category"]) == {"assault"} for p in week["points"])
+    assert real_client.get("/api/incidents", params={"days": 0}).status_code == 422

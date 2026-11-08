@@ -26,7 +26,7 @@ export function CategoryFilter({
             aria-pressed={pressed}
             onClick={() => toggle(category)}
           >
-            {category}
+            {category.replace(/_/g, " ")}
           </button>
         );
       })}

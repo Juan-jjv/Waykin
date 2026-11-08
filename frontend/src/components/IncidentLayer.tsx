@@ -15,7 +15,7 @@ export function incidentRadius(count: number): number {
   return Math.min(4 + Math.sqrt(count) * 1.5, 16);
 }
 
-export function IncidentLayer({ points }: { points: IncidentPoint[] }) {
+export function IncidentLayer({ points, windowLabel }: { points: IncidentPoint[]; windowLabel: string }) {
   const map = useWaykinMap();
   const { appearance } = useAppearance();
 
@@ -26,7 +26,8 @@ export function IncidentLayer({ points }: { points: IncidentPoint[] }) {
       const count = Number(feature?.properties?.count ?? 0);
       const detail = String(feature?.properties?.detail ?? "");
       const node = document.createElement("div");
-      node.textContent = detail ? `${strings.incidentCount(count)} (${detail})` : strings.incidentCount(count);
+      const text = strings.incidentCount(count, windowLabel);
+      node.textContent = detail ? `${text} (${detail})` : text;
       popup.setLngLat(event.lngLat).setDOMContent(node).addTo(map);
     };
     const onEnter = () => {
@@ -59,10 +60,10 @@ export function IncidentLayer({ points }: { points: IncidentPoint[] }) {
           type: "circle",
           source: SOURCE,
           paint: {
-            "circle-radius": ["get", "radius"],
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, ["*", ["get", "radius"], 0.3], 15, ["get", "radius"]],
             "circle-color": appearance === "dark" ? "#a8a29e" : "#78716c",
             "circle-opacity": 0.72,
-            "circle-stroke-width": 1,
+            "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 10, 0.25, 14, 1],
             "circle-stroke-color": appearance === "dark" ? "#f5f5f4" : "#44403c",
           },
         });
@@ -86,7 +87,7 @@ export function IncidentLayer({ points }: { points: IncidentPoint[] }) {
       popup.remove();
       if (map.getStyle()) removeMapSource(map, SOURCE, [LAYER]);
     };
-  }, [map, points, appearance]);
+  }, [map, points, appearance, windowLabel]);
 
   return null;
 }

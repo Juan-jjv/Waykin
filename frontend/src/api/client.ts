@@ -34,9 +34,9 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   meta: () => (USE_MOCK ? mock().then((m) => m.meta()) : call<Meta>("/meta")),
-  incidents: (radius_m: number, categories: string[]) => {
-    if (USE_MOCK) return mock().then((m) => m.incidents(radius_m, categories));
-    const q = new URLSearchParams({ radius_m: String(radius_m) });
+  incidents: (radius_m: number, categories: string[], days: number) => {
+    if (USE_MOCK) return mock().then((m) => m.incidents(radius_m, categories, days));
+    const q = new URLSearchParams({ radius_m: String(radius_m), days: String(days) });
     categories.forEach((c) => q.append("category", c));
     return call<IncidentsResponse>(`/incidents?${q}`);
   },

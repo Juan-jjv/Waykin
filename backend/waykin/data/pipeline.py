@@ -55,11 +55,12 @@ def save_radius(out_dir: Path, radius_m: int, A: sp.csr_matrix, X, mean, observe
 
 
 def make_bundle(locations: pd.DataFrame, graph, radii, *, source: str, source_label: str, as_of: date,
-                category_preset: str, categories: list[str], n_draws: int = C.N_DRAWS) -> ExposureBundle:
+                category_preset: str, categories: list[str], n_draws: int = C.N_DRAWS,
+                daily: pd.DataFrame | None = None) -> ExposureBundle:
     """An in-memory bundle: nothing is written to disk."""
     X, mean, observed = {}, {}, {}
     for r in radii:
         _, X[r], mean[r], observed[r], _ = build_radius(locations, graph, int(r), n_draws=n_draws)
     return ExposureBundle(source=source, source_label=source_label, as_of=as_of, window_days=C.WINDOW_DAYS,
                           category_preset=category_preset, categories=list(categories), radii=[int(r) for r in radii],
-                          X=X, mean=mean, observed=observed, locations=locations)
+                          X=X, mean=mean, observed=observed, locations=locations, daily=daily)

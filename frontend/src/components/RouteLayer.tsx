@@ -171,7 +171,7 @@ export function SegmentFocus({
 
   useEffect(() => {
     if (!focus || focus.geometry.length === 0) return;
-    fitLatLon(map, focus.geometry, 17);
+    fitLatLon(map, focus.geometry, focus.geometry.length === 1 ? 15 : 17);
   }, [focus, map]);
 
   return null;

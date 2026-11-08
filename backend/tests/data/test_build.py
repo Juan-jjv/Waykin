@@ -50,6 +50,13 @@ def test_locations_hold_published_rows_only(built):
     assert df["count"].min() >= 1 and not df["location_id"].str.startswith("prior").any()
 
 
+def test_daily_table_is_saved_and_loaded(built):
+    b = load_exposure(built / "build" / "exposure", "synthetic", [100], graph_hash(built))
+    assert list(b.daily.columns) == ["location_id", "date", "category", "count"]
+    assert int(b.daily["count"].sum()) == int(b.locations["count"].sum())
+    assert set(b.daily["location_id"]) <= set(b.locations["location_id"])
+
+
 def test_load_round_trip_is_memory_mapped(built):
     b = load_exposure(built / "build" / "exposure", "synthetic", [100], graph_hash(built))
     assert b.radii == [100] and list(b.X) == [100] and isinstance(b.X[100], np.memmap)

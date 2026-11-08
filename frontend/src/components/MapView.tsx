@@ -36,7 +36,7 @@ export function MapView({ bbox, showBBox, children }: MapViewProps) {
       style: MAP_STYLES[style],
       center: [(west + east) / 2, (south + north) / 2],
       zoom: 13,
-      minZoom: 11,
+      minZoom: 9,
       maxZoom: 19,
       attributionControl: false,
     });

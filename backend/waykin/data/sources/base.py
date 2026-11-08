@@ -13,6 +13,7 @@ import yaml
 from waykin.constants import WINDOW_DAYS
 
 SOURCE_COLUMNS = ["location_id", "lat", "lon", "category", "count", "period_start", "period_end"]
+DAILY_COLUMNS = ["location_id", "date", "category", "count"]
 DATA_PKG = Path(__file__).resolve().parent.parent
 
 
@@ -22,6 +23,9 @@ class ExposureSource(Protocol):
 
     def as_of(self) -> date: ...
     def load(self, bbox: tuple[float, float, float, float], categories: list[str] | None) -> pd.DataFrame: ...
+    def daily(self, bbox: tuple[float, float, float, float], categories: list[str] | None) -> pd.DataFrame:
+        """The same reports as `load`, split by the day they were reported: DAILY_COLUMNS."""
+        ...
 
 
 @dataclass(frozen=True)

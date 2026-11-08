@@ -18,7 +18,7 @@ import yaml
 from pyproj import Transformer
 
 from waykin import constants as C
-from waykin.data.sources.base import DATA_PKG, SOURCE_COLUMNS, category_config
+from waykin.data.sources.base import DAILY_COLUMNS, DATA_PKG, SOURCE_COLUMNS, category_config
 
 EPS_LABEL = "Edmonton Police Service data snapshot"
 SUFFIXES = (".csv", ".xlsx", ".geojson", ".json")
@@ -121,8 +121,9 @@ class EpsSource:
         if "wkt" in df:
             points = df.pop("wkt").astype(str).str.extract(_WKT_POINT)
             df["lon"], df["lat"] = points[0], points[1]
-        df["lat"] = pd.to_numeric(df["lat"], errors="coerce").astype(float)
-        df["lon"] = pd.to_numeric(df["lon"], errors="coerce").astype(float)
+        # Rounded to the precision of _location_id, so points a hair apart share one location.
+        df["lat"] = pd.to_numeric(df["lat"], errors="coerce").astype(float).round(7)
+        df["lon"] = pd.to_numeric(df["lon"], errors="coerce").astype(float).round(7)
         df["date"] = pd.to_datetime(df["date"], errors="coerce").dt.date
         df["count"] = pd.to_numeric(df["count"], errors="coerce").fillna(0).astype("int64") if "count" in df else 1
         dated = df["date"].dropna()
@@ -138,13 +139,16 @@ class EpsSource:
         self._table()
         return self._as_of
 
-    def window(self, bbox, categories: list[str] | None, start: date, end: date) -> pd.DataFrame:
-        """Reports with start < date ≤ end, aggregated to (location, category), in the source-table shape."""
+    def _reports(self, bbox, categories: list[str] | None, start: date, end: date) -> pd.DataFrame:
         t = self._table()
         w, s, e, n = bbox
         wanted = set(categories) if categories else set(category_config().categories)
-        t = t[(t["date"] > start) & (t["date"] <= end) & t["lat"].between(s, n) & t["lon"].between(w, e)
-              & t["category"].isin(wanted) & (t["count"] >= 1)]
+        return t[(t["date"] > start) & (t["date"] <= end) & t["lat"].between(s, n) & t["lon"].between(w, e)
+                 & t["category"].isin(wanted) & (t["count"] >= 1)]
+
+    def window(self, bbox, categories: list[str] | None, start: date, end: date) -> pd.DataFrame:
+        """Reports with start < date ≤ end, aggregated to (location, category), in the source-table shape."""
+        t = self._reports(bbox, categories, start, end)
         if t.empty:
             return pd.DataFrame(columns=SOURCE_COLUMNS)
         g = t.groupby(["lat", "lon", "category"], as_index=False)["count"].sum()
@@ -156,3 +160,13 @@ class EpsSource:
     def load(self, bbox, categories: list[str] | None) -> pd.DataFrame:
         end = self.as_of()
         return self.window(bbox, categories, end - timedelta(days=C.WINDOW_DAYS), end)
+
+    def daily(self, bbox, categories: list[str] | None) -> pd.DataFrame:
+        end = self.as_of()
+        t = self._reports(bbox, categories, end - timedelta(days=C.WINDOW_DAYS), end)
+        if t.empty:
+            return pd.DataFrame(columns=DAILY_COLUMNS)
+        g = t.groupby(["lat", "lon", "date", "category"], as_index=False)["count"].sum()
+        g.insert(0, "location_id", [_location_id(a, b) for a, b in zip(g["lat"], g["lon"])])
+        g["count"] = g["count"].astype("int64")
+        return g[DAILY_COLUMNS].sort_values(["location_id", "date", "category"]).reset_index(drop=True)
