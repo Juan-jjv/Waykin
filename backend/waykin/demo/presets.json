@@ -4,12 +4,12 @@
     "name": "A clear lower-exposure route",
     "description": "For about the same walking time, the balanced route has at least 15% fewer reported incidents in more than 9 of 10 simulations.",
     "origin": {
-      "lat": 53.519952,
-      "lon": -113.497771
+      "lat": 53.523273,
+      "lon": -113.502468
     },
     "destination": {
-      "lat": 53.513698,
-      "lon": -113.512263
+      "lat": 53.519108,
+      "lon": -113.519921
     },
     "expected": "recommend"
   },
