@@ -19,3 +19,5 @@ class AppState:
     hazards: "HazardStore"
     journeys: "JourneyStore"
     relay: "RelayHub"
+    accounts: Any = None  # waykin.accounts.store.AccountStore; created on first use if a test leaves it unset
+    family_hub: Any = None  # waykin.accounts.hub.FamilyHub

@@ -33,6 +33,8 @@ class Journey:
     latest: str | None = None      # the latest raw "loc" JSON text, relayed byte for byte
     last_seq: int = -1
     ended: bool = False
+    last_walker_at: float = 0.0    # time.monotonic() of the walker's last message; 0 = never connected
+    silent_sent: bool = False      # walker_silent already sent since the last walker message
 
 
 class JourneyStore:

@@ -95,9 +95,9 @@ def _from_extract(ox, osm_file: Path, bbox, work_dir: Path):
 
 def _undirected_largest(ox, G):
     major = int(ox.__version__.split(".")[0])
-    if major >= 2:      # osmnx 2 finds weak components only on a directed graph
-        G = ox.truncate.largest_component(G, strongly=False)
-        return ox.convert.to_undirected(G)
+    if major >= 2:
+        # largest_component needs a directed graph in osmnx 2.x, so take it before converting.
+        return ox.convert.to_undirected(ox.truncate.largest_component(G, strongly=False))
     G = ox.utils_graph.get_undirected(G)
     return ox.utils_graph.get_largest_component(G, strongly=False)
 

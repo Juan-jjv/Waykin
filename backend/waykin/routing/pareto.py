@@ -35,7 +35,9 @@ def select_options(
         lower = Candidate(**{**vars(low), "label": "lower_exposure"})
 
     balanced: Candidate | None = None
-    if lower is not None and fastest.exposure_mean - lower.exposure_mean >= balanced_min_reduction:
+    # balanced_min_reduction is a share of fastest's exposure (0.05 = at least 5% lower), not a count of reports.
+    min_drop = balanced_min_reduction * fastest.exposure_mean
+    if lower is not None and fastest.exposure_mean - lower.exposure_mean >= min_drop:
         dx = lower.minutes - fastest.minutes or 1.0
         dy = lower.exposure_mean - fastest.exposure_mean or 1.0
         interior = [route for route in capped if route.route_id not in {fastest.route_id, lower.route_id}]
@@ -49,10 +51,11 @@ def select_options(
                     route.route_id,
                 ),
             )
-            if best.exposure_mean <= fastest.exposure_mean - balanced_min_reduction:
+            if best.exposure_mean <= fastest.exposure_mean - min_drop:
                 balanced = Candidate(**{**vars(best), "label": "balanced"})
 
-    alternatives = ([lower] if lower is not None else []) + ([balanced] if balanced is not None else [])
+    # Contract order (B5): fastest, then balanced, then lower_exposure.
+    alternatives = ([balanced] if balanced is not None else []) + ([lower] if lower is not None else [])
     target = lower.exposure_mean if lower is not None else fastest.exposure_mean
     over_cap = [route for route in frontier if route.minutes > cap and route.exposure_mean < target]
     uncapped_raw = min(over_cap, key=lambda route: (route.exposure_mean, route.minutes, route.route_id), default=None)

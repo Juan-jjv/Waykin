@@ -43,6 +43,32 @@ def test_blocking_all_source_exits_raises_no_path():
         candidate_set(graph, np.zeros(graph.n_edges), 0, graph.n_nodes - 1, blocked)
 
 
+def test_blocked_request_leaves_the_shared_graph_unchanged():
+    graph = make_grid_graph()
+    src, dst = 0, graph.n_nodes - 1
+    before = candidate_set(graph, np.zeros(graph.n_edges), src, dst).fastest.edge_ids.copy()
+    indptr, indices = graph.csr.indptr.copy(), graph.csr.indices.copy()
+    blocked = np.zeros(graph.n_edges, dtype=bool)
+    blocked[before[len(before) // 2]] = True
+    candidate_set(graph, np.zeros(graph.n_edges), src, dst, blocked)
+    assert np.array_equal(graph.csr.indptr, indptr) and np.array_equal(graph.csr.indices, indices)
+    after = candidate_set(graph, np.zeros(graph.n_edges), src, dst).fastest.edge_ids
+    assert np.array_equal(after, before)
+
+
+def test_alternatives_follow_contract_order_and_balanced_is_relative():
+    graph = make_grid_graph()
+    rng = np.random.default_rng(3)
+    for _ in range(20):
+        exposure = rng.gamma(0.5, 2.0, graph.n_edges)
+        result = candidate_set(graph, exposure, 0, graph.n_nodes - 1)
+        labels = [c.label for c in result.alternatives]
+        assert labels in ([], ["balanced"], ["lower_exposure"], ["balanced", "lower_exposure"])
+        for c in result.alternatives:
+            if c.label == "balanced":
+                assert c.exposure_mean <= result.fastest.exposure_mean * 0.95 + 1e-9
+
+
 def test_route_edges_are_contiguous():
     graph = make_grid_graph()
     result = candidate_set(graph, np.zeros(graph.n_edges), 0, graph.n_nodes - 1)

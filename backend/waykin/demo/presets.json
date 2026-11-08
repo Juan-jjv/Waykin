@@ -1,1 +1,50 @@
-[]
+[
+  {
+    "id": "recommend",
+    "name": "A clear lower-exposure route",
+    "description": "For about the same walking time, the balanced route has at least 15% fewer reported incidents in more than 9 of 10 simulations.",
+    "origin": {
+      "lat": 53.519952,
+      "lon": -113.497771
+    },
+    "destination": {
+      "lat": 53.513698,
+      "lon": -113.512263
+    },
+    "expected": "recommend"
+  },
+  {
+    "id": "abstain",
+    "name": "Routes too close to call",
+    "description": "The routes' reported-incident counts overlap too much to call one lower, so WayKin says it doesn't matter.",
+    "origin": {
+      "lat": 53.511793,
+      "lon": -113.506456
+    },
+    "destination": {
+      "lat": 53.521899,
+      "lon": -113.50357
+    },
+    "expected": "abstain"
+  },
+  {
+    "id": "reroute",
+    "name": "Closure on the route",
+    "description": "Start the walk, then trigger the scripted closure on the route: the walker's app reroutes around it.",
+    "origin": {
+      "lat": 53.522908,
+      "lon": -113.508799
+    },
+    "destination": {
+      "lat": 53.514333,
+      "lon": -113.511235
+    },
+    "expected": "reroute",
+    "hazard": {
+      "lat": 53.518824,
+      "lon": -113.511852,
+      "radius_m": 40,
+      "description": "Closure (demo)"
+    }
+  }
+]

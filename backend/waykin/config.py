@@ -23,6 +23,13 @@ class Settings(BaseSettings):
     CITY_FEED: bool = False
     ALLOW_PUBLIC_EPS: bool = False
     CORS_ORIGINS: str = "http://localhost:5173"
+    ACCOUNTS_DB: str = ""            # SQLite path for accounts and families; empty = DATA_DIR/app.sqlite, ":memory:" in mock mode
+
+    @property
+    def accounts_db_path(self) -> str:
+        if self.ACCOUNTS_DB:
+            return self.ACCOUNTS_DB
+        return ":memory:" if self.WAYKIN_MOCK else str(self.DATA_DIR / "app.sqlite")
 
     @property
     def load_radii(self) -> list[int]:

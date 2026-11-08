@@ -23,9 +23,16 @@ def auth(ws, role, token):
     return ws.receive_json()
 
 
+INFO = {"viewers", "viewer_joined", "viewer_left"}   # walker-side notices added with the family work
+
+
 def closed_with(ws):
+    """Close code of the socket, skipping the walker's informational viewer notices."""
     with pytest.raises(WebSocketDisconnect) as e:
-        ws.receive_text()
+        while True:
+            text = ws.receive_text()
+            if json.loads(text).get("type") not in INFO:
+                pytest.fail(f"expected a close, got {text[:80]}")
     return e.value.code
 
 

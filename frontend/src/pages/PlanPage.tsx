@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { NavBar } from "../components/NavBar";
 import { ApiError, TraceError } from "../api/client";
 import { insideBBox, type Place } from "../api/geocode";
 import { useIncidents, useMeta, usePlanRoutes } from "../api/hooks";
@@ -32,6 +34,7 @@ export function PlanPage() {
   const [walkNote, setWalkNote] = useState<string | null>(null);
   const plan = usePlanRoutes();
   const touchedOrigin = useRef(false);
+  const navigate = useNavigate();
 
   const radius = meta?.default_radius_m ?? 100;
   const activeCategories = categories ?? meta?.categories ?? [];
@@ -156,8 +159,8 @@ export function PlanPage() {
   function startWalk(route: RouteOption) {
     if (!destination) return;
     try {
-      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ route, destination }));
-      setWalkNote(strings.walkSaved);
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ route, destination, originLabel, destinationLabel }));
+      navigate("/walk");
     } catch {
       setWalkNote(strings.walkSaveFailed);
     }
@@ -224,6 +227,7 @@ export function PlanPage() {
         <header className="sheet-head">
           <h1>{strings.appName}</h1>
           <p className="tagline">{strings.tagline}</p>
+          <NavBar />
         </header>
         {meta.demo_mode ? (
           <PresetPicker presets={meta.demo_presets} selectedId={presetId} onSelect={applyPreset} />
