@@ -1,0 +1,14 @@
+{
+  "n_trips": 200,
+  "n_trips_skipped": 0,
+  "n_draws": 100,
+  "radius_m": 100,
+  "n_recommend": 25,
+  "n_abstain": 175,
+  "agreement_when_recommend": 0.9752,
+  "flip_rate_when_abstain": 0.0002,
+  "naive_flip_rate_when_abstain": 0.9962,
+  "source": "eps",
+  "graph_hash": "d8bee732510541af",
+  "seconds": 313.3
+}

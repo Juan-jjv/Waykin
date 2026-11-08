@@ -1,0 +1,44 @@
+{
+  "n_trips": 200,
+  "n_planned": 200,
+  "radius_m": 100,
+  "by_status": {
+    "abstain": 175,
+    "recommend": 25
+  },
+  "by_reason": {
+    "indistinguishable": 163,
+    "too_costly": 6,
+    "thin_data": 6
+  },
+  "abstain_share": 0.875,
+  "by_radius": {
+    "100": {
+      "abstain:indistinguishable": 163,
+      "recommend:lower_exposure": 10,
+      "recommend:balanced": 15,
+      "abstain:too_costly": 6,
+      "abstain:thin_data": 6
+    },
+    "50": {
+      "abstain:indistinguishable": 156,
+      "recommend:lower_exposure": 9,
+      "abstain:too_costly": 6,
+      "recommend:balanced": 20,
+      "abstain:thin_data": 9
+    },
+    "200": {
+      "abstain:indistinguishable": 196,
+      "abstain:thin_data": 4
+    }
+  },
+  "n_radius_sensitive": 54,
+  "agrees_with_majority": {
+    "100": 188,
+    "50": 176,
+    "200": 177
+  },
+  "errors": {},
+  "source": "eps",
+  "graph_hash": "d8bee732510541af"
+}
