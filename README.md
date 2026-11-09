@@ -146,6 +146,8 @@ cd frontend && npm test && npm run lint:words
 - Juan Joseph Vijay
 - Badal Patel
 - Jay Patel
+- Lance Adhikari
+- Angad Sekhon
 
 All code was written during natHacks 2026. AI coding assistants (Claude and Cursor) were used during development and are credited as co-authors on the commits where they were used.
 
