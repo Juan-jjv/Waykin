@@ -1,8 +1,8 @@
 [
   {
     "id": "recommend",
-    "name": "A clear lower-exposure route",
-    "description": "For a little more walking time, the lower-exposure route scores at least 15% lower on nearby incidents in more than 9 of 10 simulations.",
+    "name": "Worth the detour",
+    "description": "It's a few minutes longer, but you pass noticeably fewer reported incidents, so WayKin suggests it.",
     "origin": {
       "lat": 53.551209,
       "lon": -113.496729
@@ -15,8 +15,8 @@
   },
   {
     "id": "abstain",
-    "name": "Routes too close to call",
-    "description": "The routes' reported-incident counts overlap too much to call one lower, so WayKin says it doesn't matter.",
+    "name": "Too close to call",
+    "description": "Both ways have about the same number of reported incidents, so WayKin won't pick one. Take whichever you like.",
     "origin": {
       "lat": 53.518948,
       "lon": -113.511002
@@ -29,8 +29,8 @@
   },
   {
     "id": "reroute",
-    "name": "Closure on the route",
-    "description": "Start the walk, then trigger the scripted closure on the route: the walker's app reroutes around it.",
+    "name": "A clear winner",
+    "description": "One route passes far fewer reported incidents than the fastest way, for just a few extra minutes. WayKin picks it with confidence.",
     "origin": {
       "lat": 53.522908,
       "lon": -113.508799
