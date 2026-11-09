@@ -7,6 +7,7 @@ import { FamilyPage } from "./pages/FamilyPage";
 import { HistoryPage } from "./pages/HistoryPage";
 import { JoinPage } from "./pages/JoinPage";
 import { PlanPage } from "./pages/PlanPage";
+import { SOSDemoPage } from "./pages/SOSDemoPage";
 import { WalkPage } from "./pages/WalkPage";
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
         <Route path="/signup" element={<AuthPage mode="up" />} />
         <Route path="/account" element={<AccountPage />} />
         <Route path="/history" element={<HistoryPage />} />
+        <Route path="/sos-demo" element={<SOSDemoPage />} />
       </Routes>
     </BrowserRouter>
   );
