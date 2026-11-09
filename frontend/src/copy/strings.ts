@@ -62,6 +62,8 @@ export const strings = {
   personNear: (street: string) => `Near ${street}`,
   startHere: "Start here",
   endHere: "End here",
+  recordMessage: "Record a message",
+  stopRecording: "Stop recording",
   stationsTitle: "Police stations",
   stationsAll: (count: number) => `Show all ${count}`,
   stationsFewer: "Show fewer",

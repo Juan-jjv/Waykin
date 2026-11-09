@@ -116,6 +116,18 @@ button { font: inherit; }
   filter: invert(1);
 }
 
+.maplibregl-ctrl-top-left .wk-mic { margin-top: 8px; }
+
+.wk-mic button {
+  display: grid;
+  place-items: center;
+  color: var(--glass-text);
+  cursor: pointer;
+  transition: color 200ms ease;
+}
+
+.wk-mic button.recording { color: #ff3b30; }
+
 .maplibregl-ctrl-attrib,
 .maplibregl-ctrl-attrib-button {
   display: none !important;

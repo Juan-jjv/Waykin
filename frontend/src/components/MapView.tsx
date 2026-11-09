@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Map as MapLibreMap, NavigationControl } from "maplibre-gl";
 import type { FeatureCollection } from "geojson";
 import { MapProvider } from "../map/context";
+import { MicControl } from "../map/MicControl";
 import { fitPadding } from "../map/fitPadding";
 import { keepWaykinStyle, removeMapSource, setGeoJson, whenStyleReady } from "../map/geojson";
 import { MAP_STYLES } from "../map/styles";
@@ -41,6 +42,7 @@ export function MapView({ bbox, showBBox, children }: MapViewProps) {
       attributionControl: false,
     });
     instance.addControl(new NavigationControl({ showCompass: false, visualizePitch: false }), "top-left");
+    instance.addControl(new MicControl(), "top-left");
     instance.on("load", () => setMap(instance));
     const observer = new ResizeObserver(() => instance.resize());
     observer.observe(container);
