@@ -1,6 +1,6 @@
 # WayKin data snapshot
 
-A prebuilt `data/` folder, so the app runs without the ~15 minute city build in `docs/demo-runbook.md`. It is an
+A prebuilt `data/` folder, so the app runs without the ~15 minute city build (see "Sending new data"). It is an
 xz-compressed tar split into 49 MB parts (GitHub refuses files over 100 MB and warns over 50 MB).
 
 **Restore** after every pull that changes `data-split/` (checks every part first, takes about a minute). From
@@ -27,7 +27,17 @@ Not included: `data/app.sqlite` (accounts; the server recreates the demo account
 
 ## Sending new data
 
-After fetching new EPS reports or rebuilding the graph or exposure (runbook), repack and commit:
+To rebuild from scratch, from `backend/` with the venv active (download
+[alberta-latest.osm.pbf](https://download.geofabrik.de/north-america/canada/alberta-latest.osm.pbf) into
+`data/raw/osm/` first):
+
+```bash
+python -m scripts.data.fetch_eps                                                       # last year of EPS reports
+python -m scripts.routing.build_graph --osm-file ../data/raw/osm/alberta-latest.osm.pbf  # about 5 min
+python -m scripts.data.build_exposure --source eps --radii 100                         # about 5 min; redo after any new graph
+```
+
+Then repack and commit:
 
 ```bash
 python -m scripts.data.snapshot pack      # from backend/; or make pack-data

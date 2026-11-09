@@ -107,7 +107,7 @@ def test_server_state_loads_the_build(built):
     from waykin.config import Settings
     from waykin.main import build_state
 
-    state, _ = build_state(Settings(WAYKIN_MOCK=False, DATA_DIR=built, LOAD_RADII="50,100", ADMIN_TOKEN="t"))
+    state, _ = build_state(Settings(WAYKIN_MOCK=False, EXPOSURE_SOURCE="synthetic", DATA_DIR=built, LOAD_RADII="50,100", ADMIN_TOKEN="t"))
     assert state.exposure.radii == [50, 100] and state.exposure.source == "synthetic"
 
 

@@ -24,7 +24,10 @@ function Icon({ children, size = 18 }: { children: ReactNode; size?: number }) {
 export const WalkIcon = () => (
   <Icon>
     <circle cx="13" cy="4.5" r="1.8" />
-    <path d="M10.5 21l2-6.5 2.5 2.5V21M9 11.5l1.8-3.6c.4-.8 1.4-1.1 2.2-.7l2.5 1.3 1.5 3M12.5 14.5l-1-4.5M8 21l2.5-6.5" />
+    <path d="M12.4 7.6L11 13.6" />
+    <path d="M11 13.6l-2.2 3.4-1.6 4" />
+    <path d="M11 13.6l2.6 3.1.6 4.3" />
+    <path d="M12 9.6l-3.2 2.6M12 9.6l3 1.6 1.4 2.3" />
   </Icon>
 );
 

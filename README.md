@@ -2,13 +2,42 @@
 
 **OUR WHOLE TEAM CODED TOGETHER IN ONE VS CODE LIVE SHARE SESSION. BECAUSE OF THAT, ONLY ONE PERSON (THE SESSION HOST) MADE GIT COMMITS. THE COMMIT HISTORY AND GITHUB CONTRIBUTOR STATS ARE NOT REFLECTIVE OF THE WORK EACH TEAMMATE DID.** EVERY TEAMMATE WROTE CODE FOR THIS PROJECT. 
 
-## Run the demo
-Needs Python 3.11+ and Node 20+. Demo mode is on by default (set `DEMO_MODE=0` for anything that isn't a demo).
+# WayKin
 
-1. Install: `pip install -e "backend[dev,build]"` and `cd frontend && npm ci`.
-2. Unpack the Edmonton data committed in `data-split/` (about a minute; again after any pull that changes it):
-   `python -m scripts.data.snapshot restore` from `backend/`. See [data-split/README.md](data-split/README.md),
-   including how to send newer EPS reports or map data.
-3. Start the backend from `backend/` with `EXPOSURE_SOURCE=eps`, and the frontend with `npm run dev` in `frontend/`
-   (or `npm run build` and use the backend alone on :8000).
-4. Sign in as **`demo`**, password **`waykin-demo`**. The demo family's pins appear on the Plan map.
+## Run it
+
+You need Python 3.11+ and Node 20+.
+
+1. Clone it (over 1 GB, since the Edmonton data is included):
+   ```bash
+   git clone https://github.com/Juan-jjv/Waykin.git
+   cd Waykin
+   ```
+
+2. Install:
+   ```bash
+   python -m venv backend/.venv
+   backend\.venv\Scripts\activate        # Windows
+   source backend/.venv/bin/activate     # Mac/Linux
+   pip install -e "backend[dev,build]"
+   cd frontend
+   npm ci
+   npm run build
+   cd ..
+   ```
+
+3. Unpack the data and turn on the real incident reports:
+   ```bash
+   cd backend
+   python -m scripts.data.snapshot restore
+   python -c "open('.env', 'w').write('EXPOSURE_SOURCE=eps')"
+   ```
+
+4. Start it:
+   ```bash
+   uvicorn waykin.main:app --port 8000
+   ```
+
+5. Open http://localhost:8000 and sign in as `demo`, password `waykin-demo`.
+
+Next time, just activate the venv (step 2), `cd backend`, and do step 4.
