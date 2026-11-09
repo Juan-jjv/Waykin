@@ -1,4 +1,4 @@
-"""API contract v1 (spec B5). Frozen at H10: change only through contract-requests/ and APPLIED.md."""
+"""API contract v1 (spec B5). frontend/src/api/types.gen.ts is generated from these models (CI checks they match)."""
 from __future__ import annotations
 
 from datetime import date, datetime

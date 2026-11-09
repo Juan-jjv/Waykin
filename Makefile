@@ -51,7 +51,7 @@ mock-demo:          ## like demo, but on fixtures (works before Phase 2 lands)
 	cd backend && WAYKIN_MOCK=1 DEMO_MODE=1 $(UVICORN)
 
 smoke:              ## S1's smoke test against a running server (BASE=http://localhost:8000)
-	python smoke/smoke.py --base $${BASE:-http://localhost:8000}
+	python demo/smoke.py --base $${BASE:-http://localhost:8000}
 
 tunnel:             ## HTTPS for real-phone GPS. Public URL: refuses EPS data unless ALLOW_PUBLIC_EPS=1.
 	@if [ "$${EXPOSURE_SOURCE:-synthetic}" = "eps" ] && [ "$${ALLOW_PUBLIC_EPS:-0}" != "1" ]; then \

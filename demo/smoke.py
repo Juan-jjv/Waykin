@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""S1's smoke test (about 30 s): python smoke/smoke.py --base http://localhost:8000
+"""S1's smoke test (about 30 s): python demo/smoke.py --base http://localhost:8000
 
 Checks the loop a judge will see, against a RUNNING server (mock, real or demo mode).
 Parts that need later phases print SKIP instead of failing. Never prints coordinates.

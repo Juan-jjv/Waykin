@@ -1,4 +1,4 @@
-"""Demo controls (DEMO_MODE=1 only; 404 otherwise). Used by the presenter key and smoke/smoke.py.
+"""Demo controls (DEMO_MODE=1 only; 404 otherwise). Used by the presenter key and demo/smoke.py.
 
 POST /api/demo/trigger/{preset_id}  adds the preset's scripted closure (replacing any earlier demo closure)
 POST /api/demo/reset                clears hazards, ends every journey, closes every relay socket

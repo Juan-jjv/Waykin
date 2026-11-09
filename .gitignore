@@ -22,6 +22,8 @@ __pycache__/
 # Node
 node_modules/
 frontend/dist/
+*.tsbuildinfo
+*.pptx
 
 # Env and editors
 .env
