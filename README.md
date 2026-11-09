@@ -41,14 +41,3 @@ You need Python 3.11+ and Node 20+.
 5. Open http://localhost:8000 and sign in as `demo`, password `waykin-demo`.
 
 Next time, just activate the venv (step 2), `cd backend`, and do step 4.
-
-## What's where
-
-| Folder | |
-| --- | --- |
-| `backend/` | FastAPI server, routing and data scripts |
-| `frontend/` | React app |
-| `data-split/` | Edmonton map and incident data, unpacked in step 3 |
-| `demo/` | Profile photos, and `smoke.py` (checks a running server end to end) |
-| `docs/` | [Using a real phone](docs/real-phone.md), [threat model](docs/threat-model.md) |
-| `results/` | Validation results from the data scripts |
