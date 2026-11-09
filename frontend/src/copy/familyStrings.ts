@@ -36,7 +36,6 @@ export const walkText = {
   beforeWho: (who: string) => `${who} will see where you are until you arrive or stop.`,
   beforeLink: "Only people with the link will see where you are until you arrive or stop.",
   beforeServer: "Your location is encrypted on this phone. The WayKin server passes it on but can't read it.",
-  beforeAsk: "Your browser will now ask for location access.",
   beforeNobody: "Nothing is shared. Your location stays on this phone.",
   start: "Start walk",
   starting: "Starting…",
@@ -76,6 +75,20 @@ export const walkText = {
   } as Record<AlertKind, string>,
 };
 
+export const driveText: typeof walkText = {
+  ...walkText,
+  title: "Drive",
+  shareWith: "Share this drive with",
+  simulate: "Simulate the drive (demo)",
+  start: "Start drive",
+  denied: "Location access is off. Turn it on in your browser's site settings, or simulate the drive.",
+  noGps: "This browser can't share its location. You can simulate the drive instead.",
+  viewerJoined: (label: string | null) => (label ? `${label} is now viewing your drive` : "Someone with your link is now viewing your drive"),
+  newWalk: "Plan another trip",
+  cancel: "Keep driving",
+  logWalk: (from: string, to: string, min: number) => `Drove from ${from} to ${to} (${Math.max(1, Math.round(min))} min)`,
+};
+
 export const followText = {
   title: (name: string) => `Following ${name}`,
   someone: "the walker",
@@ -96,7 +109,7 @@ export const followText = {
 
 export const familyText = {
   title: "Family",
-  signedOut: "Sign in to create a family or join one. Planning a route never needs an account.",
+  signedOut: "Sign in to create a family or join one.",
   signIn: "Sign in",
   signUp: "Create account",
   none: "You're not in a family yet.",
@@ -165,7 +178,7 @@ export const accountText = {
   pinsInvalid: "Use 4–8 digits for each, and make them different.",
   pinsSet: "PINs are set on this device.",
   historyTitle: "History",
-  historyEmpty: "Nothing yet. Walks and family activity appear here, on this device only.",
+  historyEmpty: "Nothing yet.",
   historyNote: "Kept only on this device and deleted after 30 days.",
   clearHistory: "Clear history",
 };

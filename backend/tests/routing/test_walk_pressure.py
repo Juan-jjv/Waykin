@@ -55,7 +55,8 @@ def test_recency_and_severity_weights():
     w = location_weights(locs, daily, AS_OF)
     assert list(w["n"]) == [2]                                     # the 40-day-old reports are outside the window
     sev = category_config().severity
-    assert w["weight"].iloc[0] == pytest.approx(2 * 0.5 * sev["assault"])   # one half-life old
+    expected = (2 * 0.5 * sev["assault"] ** C.WALK_SEVERITY_POWER) ** C.WALK_SPOT_POWER   # one half-life old
+    assert w["weight"].iloc[0] == pytest.approx(expected)
 
 
 def test_walking_route_avoids_a_hotspot_on_the_direct_line():
@@ -123,6 +124,20 @@ def test_a_homicide_outweighs_several_thefts():
     locs, daily = _reports(g, [(lat, lon, 1, 0, "homicide"), (lat + 0.002, lon, 4, 0, "theft")])
     w = location_weights(locs, daily, AS_OF).set_index("location_id")["weight"]
     assert w["L000"] > w["L001"]
+
+
+def test_serious_reports_at_one_spot_compound_but_minor_ones_only_add_up():
+    g = make_grid_graph(4)
+    lat, lon = _mid(g, 0, 1)
+    for category, compounds in (("assault", True), ("theft", False)):
+        spread = [(lat + 0.001 * (i + 1), lon, 1, 0, category) for i in range(10)]
+        locs, daily = _reports(g, [(lat, lon, 10, 0, category), *spread])
+        w = location_weights(locs, daily, AS_OF).set_index("location_id")["weight"]
+        rest = w.drop("L000").sum()
+        if compounds:
+            assert w["L000"] > 3 * rest
+        else:
+            assert w["L000"] == pytest.approx(rest)
 
 
 # ---- no-go zones around the most serious reports (homicide, weapons)

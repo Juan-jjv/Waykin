@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { NavBar } from "../components/NavBar";
 import { accountText } from "../copy/familyStrings";
 import { accountApi, useAccount } from "../family/api";
 import { idb, KEYS } from "../family/idb";
 import { forgetDeviceKey } from "../family/session";
 import { clearPins, hasPins, savePins } from "../walk/pins";
 
-export function AccountPage() {
+/** The Account pane of the main panel: sign-out, deletion and the walk PINs. */
+export function AccountPanel() {
   const account = useAccount();
   const me = account.data ?? null;
   const qc = useQueryClient();
@@ -28,10 +28,9 @@ export function AccountPage() {
   }
 
   return (
-    <div className="page">
-      <NavBar />
+    <div className="pane-stack">
       <section className="page-card">
-        <h1>{accountText.title}</h1>
+        <h2 className="section-title">{accountText.title}</h2>
         <p>{accountText.signedInAs(me.display_name, me.login)}</p>
         <div className="row">
           <button type="button" className="btn-quiet" onClick={() => void leave(accountApi.logOut)}>{accountText.logOut}</button>

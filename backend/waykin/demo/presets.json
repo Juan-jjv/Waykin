@@ -2,7 +2,7 @@
   {
     "id": "recommend",
     "name": "A clear lower-exposure route",
-    "description": "For a little more walking time, the lower-exposure route passes at least 15% fewer weighted reports in more than 9 of 10 simulations.",
+    "description": "For a little more walking time, the lower-exposure route scores at least 15% lower on nearby incidents in more than 9 of 10 simulations.",
     "origin": {
       "lat": 53.551209,
       "lon": -113.496729
@@ -18,12 +18,12 @@
     "name": "Routes too close to call",
     "description": "The routes' reported-incident counts overlap too much to call one lower, so WayKin says it doesn't matter.",
     "origin": {
-      "lat": 53.511793,
-      "lon": -113.506456
+      "lat": 53.518948,
+      "lon": -113.511002
     },
     "destination": {
-      "lat": 53.521899,
-      "lon": -113.50357
+      "lat": 53.51899,
+      "lon": -113.501718
     },
     "expected": "abstain"
   },

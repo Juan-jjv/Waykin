@@ -7,7 +7,7 @@ import { BannerStack, useBanners } from "../components/AlertCenter";
 import { MapView } from "../components/MapView";
 import { NavBar } from "../components/NavBar";
 import { TrackLayer } from "../components/TrackLayer";
-import { walkText } from "../copy/familyStrings";
+import { driveText, walkText } from "../copy/familyStrings";
 import { accountApi, useAccount, useFamilies } from "../family/api";
 import { logActivity } from "../family/history";
 import { ensureDeviceKey, startFamilyWalk } from "../family/session";
@@ -48,6 +48,7 @@ function readDraft(): Draft | null {
 
 export function WalkPage() {
   const draft = useRef(readDraft()).current;
+  const text = draft?.mode === "drive" ? driveText : walkText;
   const meta = useMeta().data;
   const account = useAccount().data ?? null;
   const families = useFamilies(Boolean(account)).data ?? [];
@@ -69,7 +70,7 @@ export function WalkPage() {
   const [stopOpen, setStopOpen] = useState(false);
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState(false);
-  const [endedText, setEndedText] = useState(walkText.ended);
+  const [endedText, setEndedText] = useState(text.ended);
 
   const relay = useRef<RelayWalker | null>(null);
   const sim = useRef<SimGeo | null>(null);
@@ -96,8 +97,8 @@ export function WalkPage() {
       <div className="page">
         <NavBar />
         <div className="page-card">
-          <p>{walkText.noRoute}</p>
-          <Link className="btn-primary inline" to="/">{walkText.backToPlan}</Link>
+          <p>{text.noRoute}</p>
+          <Link className="btn-primary inline" to="/">{text.backToPlan}</Link>
         </div>
       </div>
     );
@@ -148,8 +149,8 @@ export function WalkPage() {
       : {});
     if (relay.current) void send(u);
     if (alert && alert !== "arrived" && alert !== "rerouted" && share.kind !== "nobody") {
-      push(walkText.alertSent[alert]);
-      logActivity("alert", walkText.alertSent[alert]);
+      push(text.alertSent[alert]);
+      logActivity("alert", text.alertSent[alert]);
     }
     if (fired.includes("arrived")) void finish("arrived");
   }
@@ -167,9 +168,9 @@ export function WalkPage() {
       monitor.current?.setRoute(best.geometry, best.minutes, Date.now());
       routeDirty.current = true;
       pendingAlert.current = "rerouted";
-      push(walkText.rerouted, { ring: true });
+      push(text.rerouted, { ring: true });
     } catch {
-      push(walkText.rerouteFailed, { urgent: true, ring: true });
+      push(text.rerouteFailed, { urgent: true, ring: true });
     } finally {
       rerouting.current = false;
     }
@@ -215,7 +216,7 @@ export function WalkPage() {
   async function start() {
     setError(null);
     if (source === "gps" && !("geolocation" in navigator)) {
-      setError(walkText.noGps);
+      setError(text.noGps);
       return;
     }
     setPhase("starting");
@@ -233,7 +234,7 @@ export function WalkPage() {
         r.onStatus(setStatus);
         r.onViewers((n, label, joined) => {
           setViewers(n);
-          if (joined) push(walkText.viewerJoined(label ?? null));
+          if (joined) push(text.viewerJoined(label ?? null));
         });
         r.connect();
         relay.current = r;
@@ -261,7 +262,7 @@ export function WalkPage() {
           if (err.code === err.PERMISSION_DENIED) {
             void finish("stopped");
             setPhase("setup");
-            setError(walkText.denied);
+            setError(text.denied);
           }
         },
         { enableHighAccuracy: true, maximumAge: 2000 },
@@ -285,8 +286,8 @@ export function WalkPage() {
     relay.current?.end(reason);
     relay.current = null;
     const minutes = (Date.now() - startedAt.current) / 60_000;
-    logActivity("walk", walkText.logWalk(draft!.originLabel ?? "start", draft!.destinationLabel ?? "destination", minutes));
-    setEndedText(reason === "arrived" ? walkText.arrivedDone : walkText.ended);
+    logActivity("walk", text.logWalk(draft!.originLabel ?? "start", draft!.destinationLabel ?? "destination", minutes));
+    setEndedText(reason === "arrived" ? text.arrivedDone : text.ended);
     setPhase("ended");
   }
 
@@ -318,7 +319,7 @@ export function WalkPage() {
   }
 
   const familyName = share.kind === "family" ? families.find((f) => f.family_id === share.fid)?.name ?? "" : "";
-  const sharingLabel = share.kind === "family" ? walkText.sharingFamily : share.kind === "link" ? walkText.sharingLink : walkText.sharingNobody;
+  const sharingLabel = share.kind === "family" ? text.sharingFamily : share.kind === "link" ? text.sharingLink : text.sharingNobody;
 
   return (
     <div className="app-shell">
@@ -332,58 +333,57 @@ export function WalkPage() {
       </div>
       <aside className="sheet">
         <header className="sheet-head">
-          <h1>{walkText.title}</h1>
+          <h1>{text.title}</h1>
           <NavBar />
         </header>
 
         {phase === "setup" || phase === "starting" ? (
           <div className="walk-setup">
             <p className="walk-summary">
-              <strong>{walkText.minutes(route.minutes)}</strong> · {draft.originLabel ?? ""} → {draft.destinationLabel ?? ""}
+              <strong>{text.minutes(route.minutes)}</strong> · {draft.originLabel ?? ""} → {draft.destinationLabel ?? ""}
             </p>
             <fieldset className="choice">
-              <legend>{walkText.shareWith}</legend>
+              <legend>{text.shareWith}</legend>
               {families.map((f) => (
                 <label key={f.family_id}>
                   <input type="radio" name="share" checked={share.kind === "family" && share.fid === f.family_id}
                     onChange={() => setShare({ kind: "family", fid: f.family_id })} />
-                  {walkText.shareFamily(f.name)}
+                  {text.shareFamily(f.name)}
                 </label>
               ))}
               <label>
                 <input type="radio" name="share" checked={share.kind === "link"} onChange={() => setShare({ kind: "link" })} />
-                {walkText.shareLink}
+                {text.shareLink}
               </label>
               <label>
                 <input type="radio" name="share" checked={share.kind === "nobody"} onChange={() => setShare({ kind: "nobody" })} />
-                {walkText.shareNobody}
+                {text.shareNobody}
               </label>
-              {!account ? <Link to="/login?next=/walk" className="hint">{walkText.signInForFamily}</Link> : null}
+              {!account ? <Link to="/login?next=/walk" className="hint">{text.signInForFamily}</Link> : null}
             </fieldset>
             <fieldset className="choice">
-              <legend>{walkText.location}</legend>
+              <legend>{text.location}</legend>
               <label>
                 <input type="radio" name="src" checked={source === "gps"} onChange={() => setSource("gps")} />
-                {walkText.useGps}
+                {text.useGps}
               </label>
               <label>
                 <input type="radio" name="src" checked={source === "sim"} onChange={() => setSource("sim")} />
-                {walkText.simulate}
+                {text.simulate}
               </label>
             </fieldset>
-            <section className="before" aria-label={walkText.beforeTitle}>
-              <h2>{walkText.beforeTitle}</h2>
-              {share.kind === "nobody" ? <p>{walkText.beforeNobody}</p> : (
+            <section className="before" aria-label={text.beforeTitle}>
+              <h2>{text.beforeTitle}</h2>
+              {share.kind === "nobody" ? <p>{text.beforeNobody}</p> : (
                 <>
-                  <p>{share.kind === "family" ? walkText.beforeWho(familyName) : walkText.beforeLink}</p>
-                  <p>{walkText.beforeServer}</p>
+                  <p>{share.kind === "family" ? text.beforeWho(familyName) : text.beforeLink}</p>
+                  <p>{text.beforeServer}</p>
                 </>
               )}
-              {source === "gps" ? <p>{walkText.beforeAsk}</p> : null}
             </section>
             {error ? <p className="notice">{error}</p> : null}
             <button type="button" className="btn-primary find" disabled={phase === "starting"} onClick={() => void start()}>
-              {phase === "starting" ? walkText.starting : walkText.start}
+              {phase === "starting" ? text.starting : text.start}
             </button>
           </div>
         ) : null}
@@ -393,36 +393,36 @@ export function WalkPage() {
             <div className="status-bar">
               <span>
                 <strong>{sharingLabel}</strong>
-                {share.kind !== "nobody" ? <> · {walkText.viewing(viewers)}</> : null}
-                {status === "reconnecting" ? <> · {walkText.reconnecting}</> : null}
+                {share.kind !== "nobody" ? <> · {text.viewing(viewers)}</> : null}
+                {status === "reconnecting" ? <> · {text.reconnecting}</> : null}
               </span>
               <button type="button" className="btn-quiet" onClick={() => { setPinError(false); setStopOpen(true); }}>
-                {walkText.stop}
+                {text.stop}
               </button>
             </div>
-            <p className="walk-eta">{walkText.eta(etaMin)}</p>
+            <p className="walk-eta">{text.eta(etaMin)}</p>
             {link ? (
               <div className="share-link">
-                <label htmlFor="share-link">{walkText.linkTitle}</label>
+                <label htmlFor="share-link">{text.linkTitle}</label>
                 <input id="share-link" readOnly value={link} onFocus={(e) => e.currentTarget.select()} />
                 <div className="row">
-                  <button type="button" className="btn-quiet" onClick={() => void copyLink()}>{copied ? walkText.copied : walkText.copy}</button>
+                  <button type="button" className="btn-quiet" onClick={() => void copyLink()}>{copied ? text.copied : text.copy}</button>
                   {"share" in navigator ? (
                     <button type="button" className="btn-quiet" onClick={() => void navigator.share({ url: link }).catch(() => undefined)}>
-                      {walkText.share}
+                      {text.share}
                     </button>
                   ) : null}
                 </div>
               </div>
             ) : null}
-            <button type="button" className="btn-primary find" onClick={() => void finish("arrived")}>{walkText.arrived}</button>
+            <button type="button" className="btn-primary find" onClick={() => void finish("arrived")}>{text.arrived}</button>
           </div>
         ) : null}
 
         {phase === "ended" ? (
           <div className="walk-ended">
             <p className="walk-done">{endedText}</p>
-            <button type="button" className="btn-primary find" onClick={() => navigate("/")}>{walkText.newWalk}</button>
+            <button type="button" className="btn-primary find" onClick={() => navigate("/")}>{text.newWalk}</button>
           </div>
         ) : null}
       </aside>
@@ -430,18 +430,18 @@ export function WalkPage() {
       {stopOpen ? (
         <div className="modal" role="dialog" aria-modal="true" aria-labelledby="stop-title">
           <div className="modal-card">
-            <h2 id="stop-title">{walkText.stopTitle}</h2>
+            <h2 id="stop-title">{text.stopTitle}</h2>
             {hasPins() ? (
               <>
-                <label htmlFor="stop-pin">{walkText.pinPrompt}</label>
+                <label htmlFor="stop-pin">{text.pinPrompt}</label>
                 <input id="stop-pin" inputMode="numeric" autoComplete="off" type="password" value={pin}
                   onChange={(e) => { setPin(e.target.value); setPinError(false); }} />
-                {pinError ? <p className="notice">{walkText.pinWrong}</p> : null}
+                {pinError ? <p className="notice">{text.pinWrong}</p> : null}
               </>
             ) : null}
             <div className="row">
-              <button type="button" className="btn-quiet" onClick={() => setStopOpen(false)}>{walkText.cancel}</button>
-              <button type="button" className="btn-primary inline" onClick={() => void confirmStop()}>{walkText.confirmStop}</button>
+              <button type="button" className="btn-quiet" onClick={() => setStopOpen(false)}>{text.cancel}</button>
+              <button type="button" className="btn-primary inline" onClick={() => void confirmStop()}>{text.confirmStop}</button>
             </div>
           </div>
         </div>

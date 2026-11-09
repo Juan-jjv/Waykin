@@ -4,6 +4,7 @@ import type { Place } from "../api/geocode";
 import type { LatLon } from "../api/types";
 import { strings } from "../copy/strings";
 import { useWaykinMap } from "../map/context";
+import { SwapIcon } from "./icons";
 import { PlaceSearch, type QuickPlace } from "./PlaceSearch";
 
 interface PointMarkerProps {
@@ -115,7 +116,13 @@ export function PointSearch({
   endChoices?: QuickPlace[];
 }) {
   return (
-    <div className="point-block">
+    <section className="point-block" aria-labelledby="plan-title">
+      <div className="section-head">
+        <h2 id="plan-title" className="section-title">{strings.planTitle}</h2>
+        <button type="button" className="text-btn" onClick={onClear} disabled={!canClear}>
+          {strings.clear}
+        </button>
+      </div>
       <div className="points">
         <PlaceSearch
           label={strings.start}
@@ -124,6 +131,7 @@ export function PointSearch({
           bbox={bbox}
           onSelect={onOrigin}
           quick={startChoices}
+          marker="start"
         />
         <PlaceSearch
           label={strings.end}
@@ -132,16 +140,19 @@ export function PointSearch({
           bbox={bbox}
           onSelect={onDestination}
           quick={endChoices}
+          marker="end"
         />
-      </div>
-      <div className="point-actions">
-        <button type="button" className="btn-quiet" onClick={onSwap} disabled={!canSwap}>
-          {strings.swap}
+        <button
+          type="button"
+          className="swap-btn"
+          onClick={onSwap}
+          disabled={!canSwap}
+          aria-label={strings.swapLabel}
+          title={strings.swapLabel}
+        >
+          <SwapIcon />
         </button>
-        <button type="button" className="btn-quiet" onClick={onClear} disabled={!canClear}>
-          {strings.clear}
-        </button>
       </div>
-    </div>
+    </section>
   );
 }

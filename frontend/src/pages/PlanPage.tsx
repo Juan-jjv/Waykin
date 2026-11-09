@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { NavBar } from "../components/NavBar";
+import { useLocation, useNavigate } from "react-router-dom";
+import { NavBar, tabIndex } from "../components/NavBar";
+import { Sheet } from "../components/Sheet";
+import { AccountPanel } from "./AccountPage";
+import { FamilyPanel } from "./FamilyHomePage";
+import { HistoryPanel } from "./HistoryPage";
 import { ApiError, TraceError } from "../api/client";
 import { insideBBox, type Place } from "../api/geocode";
 import { useIncidents, useMeta, usePlanRoutes } from "../api/hooks";
@@ -16,10 +20,18 @@ import type { QuickPlace } from "../components/PlaceSearch";
 import { PresetPicker } from "../components/PresetPicker";
 import { FitRoutes, RouteLayer, SegmentFocus } from "../components/RouteLayer";
 import { RoutePanel, RouteSkeleton } from "../components/RoutePanel";
+import { StationList } from "../components/StationList";
+import { StationPins } from "../components/StationPins";
 import { strings } from "../copy/strings";
 import { useAccount, useDemoPeople } from "../family/api";
+import type { Station } from "../map/stations";
 
 const DRAFT_KEY = "waykin:route:draft";
+const TABS = ["plan", "family", "history", "account"] as const;
+type Tab = (typeof TABS)[number];
+/** A position this recent is reused for "Your location" instead of asking the browser again. */
+const FIX_FRESH_MS = 2 * 60_000;
+let lastFix: { point: LatLon; at: number } | null = null;
 
 export function PlanPage() {
   const metaQuery = useMeta();
@@ -30,7 +42,7 @@ export function PlanPage() {
   const [destinationLabel, setDestinationLabel] = useState<string | null>(null);
   const [categories, setCategories] = useState<string[] | null>(null);
   const [incidentsOn, setIncidentsOn] = useState(true);
-  const [days, setDays] = useState(30);
+  const [days, setDays] = useState(7);
   const [presetId, setPresetId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [routeToken, setRouteToken] = useState(0);
@@ -38,8 +50,10 @@ export function PlanPage() {
   const [segmentRouteId, setSegmentRouteId] = useState<string | null>(null);
   const [walkNote, setWalkNote] = useState<string | null>(null);
   const [mode, setMode] = useState<TravelMode>("walk");
+  const [stationNote, setStationNote] = useState<string | null>(null);
   const plan = usePlanRoutes();
   const touchedOrigin = useRef(false);
+  const resultsRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   const radius = meta?.default_radius_m ?? 100;
@@ -49,6 +63,11 @@ export function PlanPage() {
   const windowLabel = strings.dateWindows.find((window) => window.days === days)?.label ?? "";
 
   const me = useAccount().data ?? null;
+  const { pathname } = useLocation();
+  const tab: Tab = TABS[Math.max(0, tabIndex(pathname))];
+  const [expanded, setExpanded] = useState(tab !== "plan");
+  useEffect(() => setExpanded(tab !== "plan"), [tab]);
+
   const demoPeople = useDemoPeople(meta?.demo_mode ? (me?.account_id ?? null) : null);
   const people = useMemo(() => (me ? demoPeople.data?.people ?? [] : []), [me, demoPeople.data]);
 
@@ -58,7 +77,6 @@ export function PlanPage() {
     const here: QuickPlace = {
       key: "here",
       label: strings.yourLocation,
-      hint: strings.yourLocationHint,
       pick: () => locate(bbox ?? []),
     };
     const family = people.map((person) => ({
@@ -75,6 +93,7 @@ export function PlanPage() {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const here = { lat: position.coords.latitude, lon: position.coords.longitude };
+        lastFix = { point: here, at: Date.now() };
         if (touchedOrigin.current || !insideBBox(here, bbox)) return;
         setOrigin(here);
         setOriginLabel(strings.yourLocation);
@@ -85,12 +104,19 @@ export function PlanPage() {
     );
   }, [bbox]);
 
+  useEffect(() => {
+    if (routeToken === 0) return;
+    const still = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    resultsRef.current?.scrollIntoView?.({ behavior: still ? "auto" : "smooth", block: "start" });
+  }, [routeToken]);
+
   function clearPlan() {
     plan.reset();
     setSelectedId(null);
     setFocus(null);
     setSegmentRouteId(null);
     setWalkNote(null);
+    setStationNote(null);
     setRouteToken(0);
   }
 
@@ -163,13 +189,30 @@ export function PlanPage() {
     setIncidentsOn(next);
   }
 
-  function findRoutes() {
-    if (!origin || !destination) return;
+  /** A station as the end, starting from the chosen start or else this device, and routes found straight away. */
+  async function routeToStation(station: Station) {
+    updateDestination(station.point, station.name);
+    let from = origin;
+    if (!from) {
+      try {
+        const here = await locate(bbox ?? []);
+        from = here.point;
+        updateOrigin(here.point, here.label);
+      } catch (error) {
+        setStationNote(error instanceof Error ? `${error.message} ${strings.stationNeedsStart}` : strings.stationNeedsStart);
+        return;
+      }
+    }
+    findRoutes(from, station.point);
+  }
+
+  function findRoutes(from = origin, to = destination) {
+    if (!from || !to) return;
     setWalkNote(null);
     setFocus(null);
     setSegmentRouteId(null);
     plan.mutate(
-      { origin, destination, mode },
+      { origin: from, destination: to, mode },
       {
         onSuccess: (data) => {
           setSelectedId(data.decision.recommended_route_id ?? defaultRouteId(data.routes, data.mode));
@@ -221,7 +264,6 @@ export function PlanPage() {
 
   const outside = plan.isError && plan.error instanceof ApiError && plan.error.code === "outside_area";
   const ready = Boolean(origin && destination);
-  const showHint = !plan.isPending && !plan.isSuccess && !plan.isError;
 
   return (
     <div className="app-shell">
@@ -240,6 +282,7 @@ export function PlanPage() {
             </>
           ) : null}
           <SegmentFocus focus={focus} />
+          <StationPins onRoute={(station) => void routeToStation(station)} />
           <PeoplePins people={people} onStart={updateOrigin} onEnd={updateDestination} />
           <PointMarkers
             origin={origin}
@@ -259,15 +302,22 @@ export function PlanPage() {
           asOf={meta.provenance.as_of}
         />
       </div>
-      <aside className="sheet">
-        <header className="sheet-head">
-          <h1>{strings.appName}</h1>
-          <p className="tagline">{strings.tagline}</p>
-          <NavBar />
-        </header>
-        {meta.demo_mode ? (
-          <PresetPicker presets={meta.demo_presets} selectedId={presetId} onSelect={applyPreset} />
-        ) : null}
+      <Sheet
+        expanded={expanded}
+        onExpandedChange={setExpanded}
+        paneKey={tab}
+        header={
+          <>
+            <h1>{strings.appName}</h1>
+            <NavBar />
+          </>
+        }
+      >
+        {tab === "family" ? <FamilyPanel /> : null}
+        {tab === "history" ? <HistoryPanel /> : null}
+        {tab === "account" ? <AccountPanel /> : null}
+        {tab === "plan" ? (
+          <>
         <PointSearch
           originLabel={originLabel}
           destinationLabel={destinationLabel}
@@ -282,46 +332,69 @@ export function PlanPage() {
           endChoices={placeChoices}
         />
         <ModePicker modes={meta.modes} mode={mode} onChange={changeMode} />
-        <button type="button" className="btn-primary find" onClick={findRoutes} disabled={!ready || plan.isPending}>
+        <button
+          type="button"
+          className={plan.isPending ? "btn-primary find busy" : "btn-primary find"}
+          onClick={() => findRoutes()}
+          disabled={!ready || plan.isPending}
+        >
+          {plan.isPending ? <span className="spinner" aria-hidden="true" /> : null}
           {plan.isPending ? strings.finding : strings.findRoutes}
         </button>
-        {showHint ? <p className="hint">{ready ? strings.findHint : strings.searchHint}</p> : null}
-        {plan.isPending ? <RouteSkeleton /> : null}
-        {plan.isError ? <p className="notice">{routeErrorCopy(plan.error, mode)}</p> : null}
-        {plan.isSuccess && plan.data ? (
-          <RoutePanel
-            response={plan.data}
-            selectedId={selectedId}
-            segmentRouteId={segmentRouteId}
-            onSelect={setSelectedId}
-            onShowSegments={showSegments}
-            onStartWalk={startWalk}
-            walkNote={walkNote}
-            mode={plan.data.mode}
-          />
+        <div className="results" ref={resultsRef}>
+          {plan.isPending ? <RouteSkeleton /> : null}
+          {plan.isError ? <p className="notice">{routeErrorCopy(plan.error, mode)}</p> : null}
+          {plan.isSuccess && plan.data ? (
+            <RoutePanel
+              response={plan.data}
+              selectedId={selectedId}
+              segmentRouteId={segmentRouteId}
+              onSelect={setSelectedId}
+              onShowSegments={showSegments}
+              onStartWalk={startWalk}
+              walkNote={walkNote}
+              mode={plan.data.mode}
+            />
+          ) : null}
+        </div>
+        <StationList from={origin} note={stationNote} onRoute={(station) => void routeToStation(station)} />
+        {meta.demo_mode ? (
+          <PresetPicker presets={meta.demo_presets} selectedId={presetId} onSelect={applyPreset} />
         ) : null}
-      </aside>
+          </>
+        ) : null}
+      </Sheet>
     </div>
   );
 }
 
 /** The device's position as a start, if the browser shares it and it's inside the map area. */
 function locate(bbox: number[]): Promise<Place> {
-  return new Promise((resolve, reject) => {
+  const settle = (point: LatLon): Place => {
+    if (bbox.length === 4 && !insideBBox(point, bbox)) throw new Error(strings.locationOutside);
+    return { label: strings.yourLocation, point };
+  };
+  if (lastFix && Date.now() - lastFix.at < FIX_FRESH_MS) {
+    const point = lastFix.point;
+    return Promise.resolve().then(() => settle(point));
+  }
+  return new Promise<LatLon>((resolve, reject) => {
     if (!("geolocation" in navigator)) {
       reject(new Error(strings.locationUnavailable));
       return;
     }
+    // A network-based fix answers in about a second; insisting on GPS here timed out often on the first tap.
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const point = { lat: position.coords.latitude, lon: position.coords.longitude };
-        if (bbox.length === 4 && !insideBBox(point, bbox)) reject(new Error(strings.locationOutside));
-        else resolve({ label: strings.yourLocation, point });
+        lastFix = { point, at: Date.now() };
+        resolve(point);
       },
-      () => reject(new Error(strings.locationDenied)),
-      { enableHighAccuracy: true, timeout: 10_000, maximumAge: 60_000 },
+      (error) =>
+        reject(new Error(error.code === error.PERMISSION_DENIED ? strings.locationDenied : strings.locationTimeout)),
+      { enableHighAccuracy: false, timeout: 15_000, maximumAge: FIX_FRESH_MS },
     );
-  });
+  }).then(settle);
 }
 
 /** Without a recommendation: on foot, start from the option passing the fewest reports; by car, the fastest. */

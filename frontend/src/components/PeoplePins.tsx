@@ -1,8 +1,23 @@
 import { useEffect, useRef } from "react";
-import { Marker, Popup } from "maplibre-gl";
+import { Marker, Popup, type PositionAnchor } from "maplibre-gl";
 import type { DemoPerson, LatLon } from "../api/types";
 import { strings } from "../copy/strings";
+import { avatarFor } from "../family/avatars";
 import { useWaykinMap } from "../map/context";
+
+// The pin is a 44px photo on a tail whose tip is the person's position (52px tall in all). MapLibre puts the card on
+// whichever side has room, so each side clears the photo by the same 8px instead of one distance from the tip.
+const PIN_POPUP_OFFSET: Record<PositionAnchor, [number, number]> = {
+  center: [0, -26],
+  top: [0, 8],
+  bottom: [0, -60],
+  left: [30, -30],
+  right: [-30, -30],
+  "top-left": [16, 0],
+  "top-right": [-16, 0],
+  "bottom-left": [16, -56],
+  "bottom-right": [-16, -56],
+};
 
 interface PeoplePinsProps {
   people: DemoPerson[];
@@ -17,9 +32,9 @@ export function PeoplePins({ people, onStart, onEnd }: PeoplePinsProps) {
   handlers.current = { onStart, onEnd };
 
   useEffect(() => {
-    const popup = new Popup({ closeButton: false, closeOnClick: true, className: "wk-popup", offset: 22 });
+    const popup = new Popup({ closeButton: false, closeOnClick: true, className: "wk-popup", offset: PIN_POPUP_OFFSET });
     const markers = people.map((person) => {
-      const marker = new Marker({ element: personElement(person.display_name), anchor: "center" })
+      const marker = new Marker({ element: personElement(person.display_name), anchor: "bottom" })
         .setLngLat([person.position.lon, person.position.lat])
         .addTo(map);
       marker.getElement().addEventListener("click", (event) => {
@@ -77,10 +92,15 @@ function personElement(name: string): HTMLElement {
   wrap.setAttribute("aria-label", name);
   const avatar = document.createElement("span");
   avatar.className = "wk-person-avatar";
-  avatar.textContent = name.slice(0, 1).toUpperCase();
-  const label = document.createElement("span");
-  label.className = "wk-pin-label";
-  label.textContent = name;
-  wrap.append(avatar, label);
+  const photo = avatarFor(name);
+  if (photo) {
+    avatar.classList.add("has-photo");
+    avatar.style.backgroundImage = `url("${photo.src}")`;
+    avatar.style.backgroundSize = photo.size;
+    avatar.style.backgroundPosition = photo.position;
+  } else {
+    avatar.textContent = name.slice(0, 1).toUpperCase();
+  }
+  wrap.append(avatar);
   return wrap;
 }

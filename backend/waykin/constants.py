@@ -26,6 +26,12 @@ MIN_REPORTS_FOR_SIGNAL = 1.0                   # below this the result is thin_d
 UNITS = f"reported incidents attributed to segments along this route, {ROUTE_WINDOW_PHRASE}"
 # Walking routes use the walk pressure model (waykin/data/walk_pressure.py) over the same window the map shows.
 WALK_HALF_LIFE_DAYS = 14.0                     # a report this old counts half as much as one from as_of
+# Heavy spots dominate: a report's severity is squared (assault 9× a theft, homicide 25×), and the serious reports at
+# one spot (assault, robbery, weapons, homicide) compound: their total is raised to WALK_SPOT_POWER, so a corner with
+# several assaults outweighs the same assaults scattered along a route. Minor reports just add up.
+WALK_SEVERITY_POWER = 2.0
+WALK_SPOT_POWER = 1.5
+WALK_SERIOUS_SEVERITY = 3.0
 # No-go zones: a circle around every spot whose most serious report in the map window is at least this severe
 # (homicide 5, weapons 3.5: the dark end of the dot colours). The lower-exposure route first keeps as much of its
 # length out of these circles as the time cap allows, then minimises reports passed.
@@ -34,8 +40,8 @@ AVOID_RADIUS_M = 100.0
 AVOID_MINUTES_PER_M = 10.0                     # search penalty: a metre inside a zone costs as much as 10 minutes
 WALK_SAMPLE_STEP_M = 10.0                      # points along each walkable edge for the closeness integral
 WALK_WINDOW_PHRASE = f"last {WINDOW_DAYS} days"
-WALK_UNITS = (f"reports near this route, {WALK_WINDOW_PHRASE}; closer, more recent and more serious reports "
-              "count more")
+WALK_UNITS = (f"incident score near this route, {WALK_WINDOW_PHRASE}; closer, more recent and more serious reports "
+              "count more, and spots with several serious reports count far more")
 UNITS_SHORT = "reported incidents"
 DISCLAIMER = ("Counts of reported incidents near street segments, from public police data. "
               "They describe the past, not what will happen on your walk. "

@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
-import { NavBar } from "../components/NavBar";
 import { accountText } from "../copy/familyStrings";
 import { deviceHistory, readHistory, type HistoryEntry } from "../family/history";
 
-export function HistoryPage() {
+/** The History pane of the main panel: activity kept on this device. */
+export function HistoryPanel() {
   const [rows, setRows] = useState<HistoryEntry[] | null>(null);
 
   useEffect(() => {
@@ -11,10 +11,9 @@ export function HistoryPage() {
   }, []);
 
   return (
-    <div className="page">
-      <NavBar />
+    <div className="pane-stack">
       <section className="page-card">
-        <h1>{accountText.historyTitle}</h1>
+        <h2 className="section-title">{accountText.historyTitle}</h2>
         <p className="hint">{accountText.historyNote}</p>
         {rows && rows.length === 0 ? <p>{accountText.historyEmpty}</p> : null}
         <ul className="list">

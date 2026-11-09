@@ -5,7 +5,9 @@ the reports near it, weighted by
 
   * closeness: a Gaussian kernel, sigma = half the catchment radius, cut off at 3 sigma;
   * recency: half-life WALK_HALF_LIFE_DAYS over the WINDOW_DAYS the map shows, so routes and the map agree;
-  * severity: the category weights in categories.yaml;
+  * severity: the category weights in categories.yaml, squared (WALK_SEVERITY_POWER);
+  * concentration: the serious reports at a spot (severity >= WALK_SERIOUS_SEVERITY) compound, their total raised to
+    WALK_SPOT_POWER, so one spot with several assaults outweighs many scattered reports; minor ones just add up;
 
 integrated along the edge and normalised so that walking straight past a report adds about its weight once. A route's
 score is the sum over its edges, so splitting an edge never changes it. Unlike the allocation model, a report is not
@@ -79,16 +81,24 @@ def location_weights(locations: pd.DataFrame, daily: pd.DataFrame | None, as_of:
         d = d[d["date"] > pd.Timestamp(as_of - timedelta(days=window_days))]
         age = (pd.Timestamp(as_of) - d["date"]).dt.days.to_numpy(float).clip(min=0)
         sev = d["category"].map(lambda c: severity.get(c, 1.0)).to_numpy(float)
-        d = d.assign(w=d["count"].to_numpy(float) * 0.5 ** (age / half_life_days) * sev,
+        w = d["count"].to_numpy(float) * 0.5 ** (age / half_life_days) * sev ** C.WALK_SEVERITY_POWER
+        serious = sev >= C.WALK_SERIOUS_SEVERITY
+        d = d.assign(minor=np.where(serious, 0.0, w), serious=np.where(serious, w, 0.0),
                      sev=np.where(d["count"].to_numpy() > 0, sev, 0.0))
-        per = d.groupby("location_id").agg(n=("count", "sum"), weight=("w", "sum"), max_sev=("sev", "max")).reset_index()
+        per = d.groupby("location_id").agg(n=("count", "sum"), minor=("minor", "sum"), serious=("serious", "sum"),
+                                           max_sev=("sev", "max")).reset_index()
     else:
         rows = []
         for loc in locations.itertuples(index=False):
             by = json.loads(loc.counts_by_category) if loc.counts_by_category else {}
-            rows.append((loc.location_id, int(loc.count), sum(n * severity.get(c, 1.0) for c, n in by.items()),
+            parts = [(n * severity.get(c, 1.0) ** C.WALK_SEVERITY_POWER, severity.get(c, 1.0) >= C.WALK_SERIOUS_SEVERITY)
+                     for c, n in by.items()]
+            rows.append((loc.location_id, int(loc.count), sum(v for v, s in parts if not s), sum(v for v, s in parts if s),
                          max((severity.get(c, 1.0) for c, n in by.items() if n > 0), default=0.0)))
-        per = pd.DataFrame(rows, columns=["location_id", "n", "weight", "max_sev"])
+        per = pd.DataFrame(rows, columns=["location_id", "n", "minor", "serious", "max_sev"])
+    # Only serious reports compound: a corner with five assaults outweighs five scattered ones, but a busy mall's
+    # shoplifting reports add up one by one.
+    per = per.assign(weight=per["minor"] + per["serious"] ** C.WALK_SPOT_POWER).drop(columns=["minor", "serious"])
     per = per[(per["n"] > 0) & (per["weight"] > 0)]
     out = per.merge(locations[["location_id", "lat", "lon"]], on="location_id", how="inner")
     return out.sort_values("location_id").reset_index(drop=True)

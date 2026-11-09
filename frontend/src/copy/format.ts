@@ -24,6 +24,15 @@ export function formatDiff(diff: Interval | null): string | null {
   return `about ${p50} fewer (${p90} to ${p10} fewer)`;
 }
 
+/** One decimal place, the precision the panel shows report counts at. */
+export function formatCount(value: number): string {
+  return value.toFixed(1);
+}
+
+export function formatDistance(meters: number): string {
+  return meters < 1000 ? `${Math.round(meters / 10) * 10} m` : `${(meters / 1000).toFixed(1)} km`;
+}
+
 export function formatMinutes(minutes: number): string {
   return `${Math.round(minutes)} min`;
 }

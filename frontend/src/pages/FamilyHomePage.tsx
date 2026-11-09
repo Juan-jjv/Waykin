@@ -3,13 +3,13 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import type { FamilyDetail } from "../api/types";
 import { BannerStack, useBanners } from "../components/AlertCenter";
-import { NavBar } from "../components/NavBar";
 import { familyText, walkText } from "../copy/familyStrings";
 import { accountApi, openFamilyStream, useAccount, useFamilies, useFamily } from "../family/api";
 import { logActivity } from "../family/history";
 import { createFamily, ensureDeviceKey, familySecret, inviteLink, removeAndRotate, resetFamilyKey } from "../family/session";
 
-export function FamilyHomePage() {
+/** The Family pane of the main panel: families, who's on a trip now, members and invites. */
+export function FamilyPanel() {
   const account = useAccount();
   const me = account.data ?? null;
   const families = useFamilies(Boolean(me));
@@ -75,10 +75,9 @@ export function FamilyHomePage() {
 
   if (!me) {
     return (
-      <div className="page">
-        <NavBar />
+      <div className="pane-stack">
         <div className="page-card">
-          <h1>{familyText.title}</h1>
+          <h2 className="section-title">{familyText.title}</h2>
           <p>{familyText.signedOut}</p>
           <div className="row">
             <Link className="btn-primary inline" to="/login?next=/family">{familyText.signIn}</Link>
@@ -93,11 +92,10 @@ export function FamilyHomePage() {
   const isOwner = d?.owner_id === me.account_id;
 
   return (
-    <div className="page">
-      <NavBar />
+    <div className="pane-stack">
       <BannerStack banners={banners} onDismiss={dismiss} />
       <div className="page-card">
-        <h1>{familyText.title}</h1>
+        <h2 className="section-title">{familyText.title}</h2>
         {families.data && families.data.length > 1 ? (
           <div className="chips">
             {families.data.map((f) => (
